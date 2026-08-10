@@ -1,15 +1,17 @@
 # London Bite Foundation Gate
 
-Backend work is blocked until this checklist is green.
+Backend work remains blocked until all checks are green.
 
-- [ ] GitHub CI installs dependencies successfully
+- [ ] Tailwind CSS v4 and PostCSS compile successfully
+- [ ] Original London Bite logo is shipped from `public/brand/london-bite-logo.png`
+- [ ] iOS-style glassmorphism shared shell/components compile
 - [ ] TypeScript strict typecheck passes
 - [ ] Next.js production build passes
-- [ ] All 53 declared application routes are generated
-- [ ] `/api/health` builds and responds
-- [ ] `/api/platform/routes` reports the route registry
-- [ ] Vercel production deployment reaches READY
-- [ ] Production alias serves the application
-- [ ] `londonbite.com` is attached only after a verified READY deployment
+- [ ] 53 declared routes remain generated
+- [ ] Exactly 32 primary navigation screens are exposed
+- [ ] `/api/health` responds correctly
+- [ ] `/api/platform/routes` reports both registries
+- [ ] Representative primary and secondary routes respond
+- [ ] Vercel deployment reaches success
 
-No production database, authentication secrets, employee documents, payment credentials, or live customer data should be connected before this gate passes.
+No production backend data or secrets are connected before this gate passes.

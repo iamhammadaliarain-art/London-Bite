@@ -21,6 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Verify Tailwind foundation
+        run: |
+          node -e 'const p=require("./package.json");if(!p.devDependencies?.tailwindcss||!p.devDependencies?.["@tailwindcss/postcss"])process.exit(1)'
+          test -f postcss.config.mjs
+          grep -q '@import "tailwindcss"' app/globals.css
+          test -f public/brand/london-bite-logo.png
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -36,7 +43,6 @@ jobs:
         run: |
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:3000/api/health > /tmp/health.json; then
-              cat /tmp/health.json
               exit 0
             fi
             sleep 1
@@ -45,23 +51,16 @@ jobs:
           exit 1
 
       - name: Verify health payload
-        run: |
-          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/health.json","utf8"));if(j.status!=="ok"||j.service!=="london-bite-platform")process.exit(1)'
+        run: node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/health.json","utf8"));if(j.status!=="ok"||j.service!=="london-bite-platform")process.exit(1)'
 
-      - name: Verify 53-route registry
+      - name: Verify 53 routes and 32 primary screens
         run: |
           curl -fsS http://127.0.0.1:3000/api/platform/routes > /tmp/routes.json
-          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==53||!Array.isArray(j.routes)||j.routes.length!==53)process.exit(1)'
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==53||j.primaryCount!==32||j.routes.length!==53||j.primaryRoutes.length!==32)process.exit(1)'
 
-      - name: Smoke test key pages
+      - name: Smoke test primary and secondary routes
         run: |
-          for path in \
-            /management/dashboard \
-            /ipos/new-order \
-            /kitchen/queue \
-            /rider/active-delivery \
-            /employee/attendance \
-            /customer/track; do
+          for path in /management/dashboard /management/orders/retrieve /ipos/new-order /kitchen/queue /rider/active-delivery /employee/attendance /customer/track /customer/receipt; do
             echo "Checking $path"
             curl -fsS "http://127.0.0.1:3000$path" > /dev/null
           done
