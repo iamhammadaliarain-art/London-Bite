@@ -8,16 +8,67 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
       - name: Install dependencies
         run: npm install
+
       - name: Typecheck
         run: npm run typecheck
-      - name: Build
+
+      - name: Production build
         run: npm run build
+
+      - name: Start production server
+        run: |
+          npm run start -- -p 3000 > /tmp/london-bite-next.log 2>&1 &
+          echo $! > /tmp/london-bite-next.pid
+
+      - name: Wait for health endpoint
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/api/health > /tmp/health.json; then
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/london-bite-next.log
+          exit 1
+
+      - name: Verify health payload
+        run: |
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/health.json","utf8"));if(j.status!=="ok"||j.service!=="london-bite-platform")process.exit(1)'
+
+      - name: Verify 53-route registry
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/platform/routes > /tmp/routes.json
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==53||!Array.isArray(j.routes)||j.routes.length!==53)process.exit(1)'
+
+      - name: Smoke test key pages
+        run: |
+          for path in \
+            /management/dashboard \
+            /ipos/new-order \
+            /kitchen/queue \
+            /rider/active-delivery \
+            /employee/attendance \
+            /customer/track; do
+            echo "Checking $path"
+            curl -fsS "http://127.0.0.1:3000$path" > /dev/null
+          done
+
+      - name: Stop production server
+        if: always()
+        run: |
+          if [ -f /tmp/london-bite-next.pid ]; then
+            kill "$(cat /tmp/london-bite-next.pid)" || true
+          fi
