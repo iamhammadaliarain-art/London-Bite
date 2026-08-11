@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
-import { PlatformPage } from "@/components/platform-page";
+import { LivePlatformPage } from "@/components/live-platform-page";
 import { findPlatformRoute, platformRoutes } from "@/lib/platform";
 
 type Props = { params: Promise<{ slug: string[] }> };
@@ -13,12 +13,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const route = findPlatformRoute(slug);
-  return { title: route ? `${route.title} | London Bite` : "London Bite Platform" };
+  return { title: route ? `${route.title} | London Bite` : "London Bite Platform", robots: route ? { index: false, follow: false } : undefined };
 }
 
 export default async function PlatformRoutePage({ params }: Props) {
   const { slug } = await params;
   const route = findPlatformRoute(slug);
   if (!route) notFound();
-  return <AppShell><PlatformPage route={route} /></AppShell>;
+  return <AppShell><LivePlatformPage route={route} /></AppShell>;
 }
