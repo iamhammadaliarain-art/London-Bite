@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { PlatformRoute } from "@/lib/platform";
 import { PlatformPage } from "@/components/platform-page";
+import { LaunchReadinessPanel } from "@/components/launch-readiness";
 import {
   LiveEmployeeAttendance,
   LiveEmployeeHome,
@@ -62,7 +63,7 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/reports") return <LiveManagementAnalytics />;
   if (["/management/stars","/management/leaderboard"].includes(route.path)) return <LiveWorkforcePerformance />;
   if (route.path === "/management/audit") return <LiveManagementAudit />;
-  if (route.path === "/management/settings") return <LiveManagementSettings />;
+  if (route.path === "/management/settings") return <div className="grid gap-3"><LiveManagementSettings /><LaunchReadinessPanel /></div>;
 
   if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <LiveCounterMembershipPOS />;
   if (["/ipos/retrieve","/ipos/payments","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
