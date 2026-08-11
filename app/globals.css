@@ -46,7 +46,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -60,4 +61,12 @@ details > summary {
 
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+footer .text-lb-navy {
+  color: #ffffff;
+}
+
+footer .text-lb-muted {
+  color: rgba(255, 255, 255, 0.64);
 }
