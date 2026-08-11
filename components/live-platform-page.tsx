@@ -16,7 +16,6 @@ import {
   LiveManagementPayroll,
   LiveManagementSchedule,
   LiveManagementSettings,
-  LiveRiderBoard,
   LiveStaffDirectory,
 } from "@/components/live-operations";
 import {
@@ -27,32 +26,64 @@ import {
   LiveManagementComms,
   LiveMenuControl,
 } from "@/components/live-extra";
+import {
+  LiveCounterRetrieve,
+  LiveEmployeeInventoryUpload,
+  LiveEmployeeProfile,
+  LiveKitchenQc,
+  LiveKitchenStock,
+  LiveManagementCustomers,
+  LiveManagementDocuments,
+  LiveManagementOrders,
+  LiveRiderDailySheet,
+  LiveRiderJobs,
+  LiveRiderPerformance,
+} from "@/components/live-route-completion";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
 }
 
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
-  if (["/management/dashboard","/management/orders","/management/orders/retrieve"].includes(route.path)) return <LiveManagementDashboard />;
+  if (route.path === "/management/dashboard") return <LiveManagementDashboard />;
+  if (route.path === "/management/orders") return <LiveManagementOrders />;
+  if (route.path === "/management/orders/retrieve") return <LiveCounterRetrieve />;
+  if (route.path === "/management/customers") return <LiveManagementCustomers />;
   if (route.path === "/management/menu") return <LiveMenuControl />;
-  if (["/management/employees","/management/documents","/management/contracts"].includes(route.path)) return <LiveStaffDirectory />;
   if (route.path === "/management/inventory") return <LiveManagementInventory />;
-  if (route.path === "/management/attendance") return <LiveManagementSchedule />;
+  if (route.path === "/management/employees") return <LiveStaffDirectory />;
+  if (route.path === "/management/attendance") return <div className="grid gap-4"><LiveManagementAttendance /><LiveManagementSchedule /></div>;
   if (route.path === "/management/fines") return <LiveManagementAttendance />;
   if (route.path === "/management/payroll") return <LiveManagementPayroll />;
   if (route.path === "/management/leave") return <LiveManagementLeave />;
+  if (route.path === "/management/documents") return <LiveManagementDocuments />;
+  if (route.path === "/management/contracts") return <LiveManagementDocuments contractMode />;
   if (["/management/announcements","/management/suggestions"].includes(route.path)) return <LiveManagementComms />;
   if (["/management/reports","/management/stars","/management/leaderboard"].includes(route.path)) return <LiveManagementAnalytics />;
   if (route.path === "/management/audit") return <LiveManagementAudit />;
   if (route.path === "/management/settings") return <LiveManagementSettings />;
-  if (route.module === "iPOS") return <LiveCounterPOS />;
-  if (route.module === "Kitchen") return <LiveKitchenBoard />;
-  if (route.module === "Rider") return <LiveRiderBoard />;
+
+  if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <LiveCounterPOS />;
+  if (["/ipos/retrieve","/ipos/payments","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
+  if (["/ipos/customers","/ipos/membership"].includes(route.path)) return <LiveCounterRetrieve customerMode />;
+
+  if (["/kitchen","/kitchen/queue","/kitchen/preparing","/kitchen/ready"].includes(route.path)) return <LiveKitchenBoard />;
+  if (route.path === "/kitchen/stock") return <LiveKitchenStock />;
+  if (route.path === "/kitchen/qc") return <LiveKitchenQc />;
+
+  if (["/rider","/rider/orders","/rider/active-delivery"].includes(route.path)) return <LiveRiderJobs />;
+  if (route.path === "/rider/history") return <LiveRiderJobs history />;
+  if (route.path === "/rider/daily-sheet") return <LiveRiderDailySheet />;
+  if (route.path === "/rider/performance") return <LiveRiderPerformance />;
+
+  if (route.path === "/employee") return <LiveEmployeeHome />;
+  if (route.path === "/employee/profile") return <LiveEmployeeProfile />;
   if (route.path === "/employee/attendance") return <LiveEmployeeAttendance />;
   if (route.path === "/employee/leave") return <LiveEmployeeLeave />;
   if (["/employee/payroll","/employee/fines","/employee/stars"].includes(route.path)) return <LiveEmployeePayroll />;
   if (route.path === "/employee/suggestions") return <LiveEmployeeSuggestions />;
-  if (route.module === "Employee") return <LiveEmployeeHome />;
+  if (route.path === "/employee/inventory-upload") return <LiveEmployeeInventoryUpload />;
+  if (route.path === "/employee/announcements") return <LiveEmployeeHome />;
   return null;
 }
 
