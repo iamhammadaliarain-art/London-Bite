@@ -8,7 +8,7 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,8 +38,16 @@ jobs:
           grep -q '"/employee"' public/sw.js
           grep -q '"/offline"' public/sw.js
 
-      - name: Typecheck
+      - name: Typecheck web platform
         run: npm run typecheck
+
+      - name: Validate native Expo source
+        run: |
+          npm --prefix mobile install
+          npm --prefix mobile run typecheck
+          node -e 'const p=require("./mobile/package.json");if(p.dependencies?.expo!=="~57.0.1"||p.dependencies?.["react-native"]!=="0.86.0"||p.dependencies?.react!=="19.2.3")process.exit(1)'
+          test -f mobile/eas.json
+          test -f mobile/app.json
 
       - name: Production build
         run: npm run build
@@ -70,7 +78,7 @@ jobs:
 
       - name: Smoke test customer commerce
         run: |
-          for path in / /order /feedback /offline /manifest.webmanifest /robots.txt /sitemap.xml /sw.js; do
+          for path in / /order /feedback /offline /staff/reset-password /manifest.webmanifest /robots.txt /sitemap.xml /sw.js; do
             echo "Checking customer path $path"
             curl -LfsS "http://127.0.0.1:3000$path" > /dev/null
           done
