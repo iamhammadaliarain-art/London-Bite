@@ -60,19 +60,20 @@ jobs:
 
       - name: Smoke test customer commerce
         run: |
-          for path in / /order /manifest.webmanifest /robots.txt /sitemap.xml; do
+          for path in / /order /feedback /manifest.webmanifest /robots.txt /sitemap.xml; do
             echo "Checking customer path $path"
-            curl -fsS "http://127.0.0.1:3000$path" > /dev/null
+            curl -LfsS "http://127.0.0.1:3000$path" > /dev/null
           done
           curl -fsS http://127.0.0.1:3000/ | grep -q "London Bite"
           curl -fsS http://127.0.0.1:3000/order | grep -q "London Bite"
 
-      - name: Smoke test primary and secondary operations routes
+      - name: Smoke test every registered platform route
         run: |
-          for path in /management/dashboard /management/orders/retrieve /ipos/new-order /kitchen/queue /rider/active-delivery /employee/attendance /customer/track /customer/receipt; do
-            echo "Checking $path"
-            curl -fsS "http://127.0.0.1:3000$path" > /dev/null
-          done
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));for(const route of j.routes) console.log(route.path)' > /tmp/platform-paths.txt
+          while IFS= read -r path; do
+            echo "Checking platform path $path"
+            curl -LfsS --max-time 15 "http://127.0.0.1:3000$path" > /dev/null
+          done < /tmp/platform-paths.txt
 
       - name: Stop production server
         if: always()
