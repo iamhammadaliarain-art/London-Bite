@@ -62,17 +62,26 @@ export const createEnhancedOrder = (input: {
   source?: string;
   scheduledFor?: string | null;
   referralCode?: string | null;
-}) => lbRpc<EnhancedCreatedOrder>("lb_create_order_v2", {
-  p_customer_name: input.name,
-  p_customer_phone: input.phone,
-  p_delivery_address: input.address,
-  p_fulfilment: input.fulfilment,
-  p_payment_method: input.paymentMethod,
-  p_items: input.items,
-  p_source: input.source ?? "web",
-  p_scheduled_for: input.scheduledFor ?? null,
-  p_referral_code: input.referralCode ?? null,
-});
+}) => {
+  if (input.scheduledFor) {
+    const scheduled = new Date(input.scheduledFor).getTime();
+    const now = Date.now();
+    if (!Number.isFinite(scheduled)) throw new Error("Choose a valid scheduled date and time.");
+    if (scheduled < now + 30 * 60 * 1000) throw new Error("Scheduled orders must be at least 30 minutes ahead.");
+    if (scheduled > now + 7 * 24 * 60 * 60 * 1000) throw new Error("Scheduled orders can be placed up to 7 days ahead.");
+  }
+  return lbRpc<EnhancedCreatedOrder>("lb_create_order_v2", {
+    p_customer_name: input.name,
+    p_customer_phone: input.phone,
+    p_delivery_address: input.address,
+    p_fulfilment: input.fulfilment,
+    p_payment_method: input.paymentMethod,
+    p_items: input.items,
+    p_source: input.source ?? "web",
+    p_scheduled_for: input.scheduledFor ?? null,
+    p_referral_code: input.referralCode ?? null,
+  });
+};
 
 export const getEnhancedOperationsOrders = (token: string) =>
   lbRpc<EnhancedOperationsOrder[]>("lb_operations_orders_v2", {}, token);
