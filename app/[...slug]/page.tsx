@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { LivePlatformPage } from "@/components/live-platform-page";
 import { findPlatformRoute, platformRoutes } from "@/lib/platform";
@@ -20,5 +20,8 @@ export default async function PlatformRoutePage({ params }: Props) {
   const { slug } = await params;
   const route = findPlatformRoute(slug);
   if (!route) notFound();
+  if (route.path === "/customer/track") redirect("/order?view=track");
+  if (route.path === "/customer/receipt") redirect("/order?view=history");
+  if (route.path === "/customer/rating") redirect("/feedback");
   return <AppShell><LivePlatformPage route={route} /></AppShell>;
 }
