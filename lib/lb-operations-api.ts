@@ -1,4 +1,5 @@
-import { lbRpc } from "@/lib/lb-api";
+import { adjustManagementInventory, lbRpc } from "@/lib/lb-api";
+export { adjustManagementInventory };
 
 export type OperationsOrder = {
   id: string;
