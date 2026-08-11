@@ -189,6 +189,7 @@ export async function captureLiveEvent(eventName: string, sessionId?: string, so
 
 export const getManagementDashboard = (token: string) => lbRpc<ManagementDashboardData>("lb_management_dashboard", {}, token);
 export const getManagementOrders = (token: string) => lbRpc<ManagementOrder[]>("lb_management_orders", {}, token);
+export const getOperationsOrders = (token: string) => lbRpc<any[]>("lb_operations_orders", {}, token);
 export const updateManagementOrder = (token: string, orderId: string, status: string) => lbRpc<{ id: string; status: string }>("lb_management_update_order", { p_order_id: orderId, p_status: status }, token);
 export const getManagementEmployees = (token: string) => lbRpc<ManagementEmployee[]>("lb_management_employees", {}, token);
 export const createManagementEmployee = (token: string, input: { name: string; role: string; station?: string; phone?: string }) => lbRpc<{ id: string; employee_code: string }>("lb_management_create_employee", { p_name: input.name, p_role: input.role, p_station: input.station ?? null, p_phone: input.phone ?? null }, token);
