@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "London Bite",
+    "slug": "london-bite",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "londonbite",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.urava.londonbite"
+    },
+    "android": {
+      "package": "com.urava.londonbite"
+    }
+  }
+}
