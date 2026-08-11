@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -13,7 +14,8 @@ import {
 } from "react-native";
 
 const SUPABASE_URL = "https://yaywauauqzfcmrzmbdkr.supabase.co";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmF1c2UiLCJyZWYiOiJ5YXl3YXVhdXF6ZmNtcnptYmRrciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzYxODk0ODE0LCJleHAiOjIwNzc0NzA4MTR9.IRA92oEpvvFBEOJaJ-w4v9XURjgg27ya9pk_xHcDb9A";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InlheXdhdWF1cXpmY21yem1iZGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTQ4MTQsImV4cCI6MjA3NzQ3MDgxNH0.IRA92oEpvvFBEOJaJ-w4v9XURjgg27ya9pk_xHcDb9A";
+const TRACKING_STORAGE_KEY = "lb.native.tracking-token";
 
 type Product = { id:string;slug:string;name:string;category:string;description:string;price:number;image_url:string|null;badge:string|null;is_available:boolean };
 type Cart = Record<string,number>;
@@ -31,33 +33,76 @@ async function rpc<T>(fn:string,body:Record<string,unknown>):Promise<T>{
 const money=(value:number)=>`Rs ${Math.round(value||0).toLocaleString("en-PK")}`;
 
 export default function App(){
-  const[view,setView]=useState<ViewName>("menu");const[products,setProducts]=useState<Product[]>([]);const[cart,setCart]=useState<Cart>({});const[loading,setLoading]=useState(true);const[error,setError]=useState("");
-  const[name,setName]=useState("");const[phone,setPhone]=useState("");const[address,setAddress]=useState("");const[fulfilment,setFulfilment]=useState<"delivery"|"pickup">("delivery");const[scheduledFor,setScheduledFor]=useState("");const[referral,setReferral]=useState("");
-  const[created,setCreated]=useState<CreatedOrder|null>(null);const[trackingToken,setTrackingToken]=useState("");const[tracked,setTracked]=useState<TrackedOrder|null>(null);const[submitting,setSubmitting]=useState(false);
+  const[view,setView]=useState<ViewName>("menu");
+  const[products,setProducts]=useState<Product[]>([]);
+  const[cart,setCart]=useState<Cart>({});
+  const[loading,setLoading]=useState(true);
+  const[error,setError]=useState("");
+  const[name,setName]=useState("");
+  const[phone,setPhone]=useState("");
+  const[address,setAddress]=useState("");
+  const[fulfilment,setFulfilment]=useState<"delivery"|"pickup">("delivery");
+  const[scheduledFor,setScheduledFor]=useState("");
+  const[referral,setReferral]=useState("");
+  const[created,setCreated]=useState<CreatedOrder|null>(null);
+  const[trackingToken,setTrackingToken]=useState("");
+  const[tracked,setTracked]=useState<TrackedOrder|null>(null);
+  const[submitting,setSubmitting]=useState(false);
 
   const loadMenu=async()=>{setLoading(true);setError("");try{setProducts((await rpc<Product[]>("lb_public_menu",{})).filter(item=>item.is_available));}catch(cause){setError(cause instanceof Error?cause.message:"Could not load menu");}finally{setLoading(false);}};
-  useEffect(()=>{void loadMenu();},[]);
+  useEffect(()=>{void loadMenu();void AsyncStorage.getItem(TRACKING_STORAGE_KEY).then(token=>{if(token){setTrackingToken(token);setView("track");}}).catch(()=>{});},[]);
+
   const lines=useMemo(()=>products.filter(p=>(cart[p.slug]??0)>0).map(p=>({product:p,quantity:cart[p.slug]})),[products,cart]);
-  const count=lines.reduce((sum,line)=>sum+line.quantity,0);const subtotal=lines.reduce((sum,line)=>sum+line.product.price*line.quantity,0);
+  const count=lines.reduce((sum,line)=>sum+line.quantity,0);
+  const subtotal=lines.reduce((sum,line)=>sum+line.product.price*line.quantity,0);
   const setQty=(slug:string,qty:number)=>setCart(current=>({...current,[slug]:Math.max(0,Math.min(10,qty))}));
 
-  const place=async()=>{setError("");if(!name.trim()||!phone.trim()||(fulfilment==="delivery"&&!address.trim())||!lines.length){setError("Complete your details and basket first.");return;}setSubmitting(true);try{
-    let scheduleIso:string|null=null;if(scheduledFor.trim()){const parsed=new Date(scheduledFor);if(Number.isNaN(parsed.getTime()))throw new Error("Use an ISO date/time for scheduling, for example 2026-08-12T19:30:00+05:00");scheduleIso=parsed.toISOString();}
-    const result=await rpc<CreatedOrder>("lb_create_order_v2",{p_customer_name:name,p_customer_phone:phone,p_delivery_address:address,p_fulfilment:fulfilment,p_payment_method:"cash",p_items:lines.map(line=>({slug:line.product.slug,quantity:line.quantity})),p_source:"native_app",p_scheduled_for:scheduleIso,p_referral_code:referral.trim()||null});
-    setCreated(result);setTrackingToken(result.tracking_token);setCart({});setView("track");await refresh(result.tracking_token);
-  }catch(cause){setError(cause instanceof Error?cause.message:"Could not place order");}finally{setSubmitting(false);}};
+  const refresh=async(token=trackingToken)=>{
+    if(!token.trim()){setError("Enter a tracking token.");return;}
+    setError("");
+    try{
+      const result=await rpc<TrackedOrder|null>("lb_track_order",{p_tracking_token:token.trim()});
+      if(!result)throw new Error("Order not found.");
+      setTracked(result);
+      setTrackingToken(token.trim());
+      await AsyncStorage.setItem(TRACKING_STORAGE_KEY,token.trim());
+    }catch(cause){setError(cause instanceof Error?cause.message:"Could not track order");}
+  };
 
-  const refresh=async(token=trackingToken)=>{if(!token.trim()){setError("Enter a tracking token.");return;}setError("");try{const result=await rpc<TrackedOrder|null>("lb_track_order",{p_tracking_token:token.trim()});if(!result)throw new Error("Order not found.");setTracked(result);}catch(cause){setError(cause instanceof Error?cause.message:"Could not track order");}};
-  useEffect(()=>{if(view!=="track"||!trackingToken)return;const id=setInterval(()=>void refresh(trackingToken),15000);return()=>clearInterval(id);},[view,trackingToken]);
+  useEffect(()=>{if(view!=="track"||!trackingToken)return;void refresh(trackingToken);const id=setInterval(()=>void refresh(trackingToken),15000);return()=>clearInterval(id);},[view,trackingToken]);
 
-  return <SafeAreaView style={styles.safe}><StatusBar style="dark"/><View style={styles.header}><View><Text style={styles.brand}>London Bite</Text><Text style={styles.tag}>EVERY BITE IS A LONDON STORY</Text></View><Pressable style={styles.bag} onPress={()=>setView("cart")}><Text style={styles.bagText}>Bag {count}</Text></Pressable></View>
+  const place=async()=>{
+    setError("");
+    if(!name.trim()||!phone.trim()||(fulfilment==="delivery"&&!address.trim())||!lines.length){setError("Complete your details and basket first.");return;}
+    setSubmitting(true);
+    try{
+      let scheduleIso:string|null=null;
+      if(scheduledFor.trim()){
+        const parsed=new Date(scheduledFor);
+        const ts=parsed.getTime();
+        if(Number.isNaN(ts))throw new Error("Use a valid ISO date/time, for example 2026-08-12T19:30:00+05:00");
+        if(ts<Date.now()+30*60*1000)throw new Error("Scheduled orders must be at least 30 minutes ahead.");
+        if(ts>Date.now()+7*24*60*60*1000)throw new Error("Scheduled orders can be placed up to 7 days ahead.");
+        scheduleIso=parsed.toISOString();
+      }
+      const result=await rpc<CreatedOrder>("lb_create_order_v2",{p_customer_name:name,p_customer_phone:phone,p_delivery_address:address,p_fulfilment:fulfilment,p_payment_method:"cash",p_items:lines.map(line=>({slug:line.product.slug,quantity:line.quantity})),p_source:"native_app",p_scheduled_for:scheduleIso,p_referral_code:referral.trim()||null});
+      await AsyncStorage.setItem(TRACKING_STORAGE_KEY,result.tracking_token);
+      setCreated(result);setTrackingToken(result.tracking_token);setCart({});setView("track");
+    }catch(cause){setError(cause instanceof Error?cause.message:"Could not place order");}
+    finally{setSubmitting(false);}
+  };
+
+  const forgetTracking=async()=>{await AsyncStorage.removeItem(TRACKING_STORAGE_KEY);setTrackingToken("");setTracked(null);setCreated(null);setView("menu");};
+
+  return <SafeAreaView style={styles.safe}><StatusBar style="dark"/>
+    <View style={styles.header}><View><Text style={styles.brand}>London Bite</Text><Text style={styles.tag}>EVERY BITE IS A LONDON STORY</Text></View><Pressable style={styles.bag} onPress={()=>setView("cart")}><Text style={styles.bagText}>Bag {count}</Text></Pressable></View>
     <View style={styles.tabs}>{(["menu","cart","checkout","track"] as ViewName[]).map(item=><Pressable key={item} style={[styles.tab,view===item&&styles.tabActive]} onPress={()=>setView(item)}><Text style={[styles.tabText,view===item&&styles.tabTextActive]}>{item.toUpperCase()}</Text></Pressable>)}</View>
     {error?<Text style={styles.error}>{error}</Text>:null}
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       {view==="menu"&&<>{loading?<ActivityIndicator size="large" color="#07182f"/>:<><Text style={styles.kicker}>LIVE MENU</Text><Text style={styles.title}>Choose your next bite.</Text>{products.map(product=><View key={product.id} style={styles.card}>{product.image_url?<Image source={{uri:product.image_url}} style={styles.image}/>:null}<View style={styles.cardBody}><Text style={styles.category}>{product.category}</Text><View style={styles.row}><Text style={styles.productName}>{product.name}</Text><Text style={styles.price}>{money(product.price)}</Text></View><Text style={styles.description}>{product.description}</Text><Pressable style={styles.primary} onPress={()=>setQty(product.slug,(cart[product.slug]??0)+1)}><Text style={styles.primaryText}>Add to bag</Text></Pressable></View></View>)}</>}</>}
       {view==="cart"&&<><Text style={styles.kicker}>YOUR BAG</Text><Text style={styles.title}>{count?`${count} item${count===1?"":"s"}`:"Nothing added yet"}</Text>{lines.map(({product,quantity})=><View key={product.slug} style={styles.line}><View style={{flex:1}}><Text style={styles.productName}>{product.name}</Text><Text style={styles.description}>{money(product.price)} each</Text></View><View style={styles.qty}><Pressable onPress={()=>setQty(product.slug,quantity-1)}><Text style={styles.qtyButton}>−</Text></Pressable><Text style={styles.qtyValue}>{quantity}</Text><Pressable onPress={()=>setQty(product.slug,quantity+1)}><Text style={styles.qtyButton}>+</Text></Pressable></View></View>)}<View style={styles.total}><Text style={styles.productName}>Subtotal</Text><Text style={styles.productName}>{money(subtotal)}</Text></View>{count?<Pressable style={styles.primary} onPress={()=>setView("checkout")}><Text style={styles.primaryText}>Continue to checkout</Text></Pressable>:<Pressable style={styles.secondary} onPress={()=>setView("menu")}><Text style={styles.secondaryText}>Browse menu</Text></Pressable>}</>}
       {view==="checkout"&&<><Text style={styles.kicker}>GUEST CHECKOUT</Text><Text style={styles.title}>Fast, direct and server-priced.</Text><TextInput style={styles.input} placeholder="Name" value={name} onChangeText={setName}/><TextInput style={styles.input} placeholder="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone}/><View style={styles.row}><Pressable style={[styles.mode,fulfilment==="delivery"&&styles.modeActive]} onPress={()=>setFulfilment("delivery")}><Text style={fulfilment==="delivery"?styles.modeActiveText:styles.modeText}>Delivery</Text></Pressable><Pressable style={[styles.mode,fulfilment==="pickup"&&styles.modeActive]} onPress={()=>setFulfilment("pickup")}><Text style={fulfilment==="pickup"?styles.modeActiveText:styles.modeText}>Pickup</Text></Pressable></View>{fulfilment==="delivery"?<TextInput style={[styles.input,styles.multiline]} placeholder="Delivery address" multiline value={address} onChangeText={setAddress}/>:null}<TextInput style={styles.input} placeholder="Optional scheduled ISO time" value={scheduledFor} onChangeText={setScheduledFor}/><TextInput style={styles.input} placeholder="Optional referral code" autoCapitalize="characters" value={referral} onChangeText={setReferral}/><View style={styles.notice}><Text style={styles.noticeTitle}>Cash payment</Text><Text style={styles.description}>Online charging remains disabled until the restaurant activates a real merchant account.</Text></View><Pressable style={[styles.primary,submitting&&styles.disabled]} disabled={submitting} onPress={()=>void place()}><Text style={styles.primaryText}>{submitting?"Sending order…":"Place cash order"}</Text></Pressable></>}
-      {view==="track"&&<><Text style={styles.kicker}>PRIVATE TRACKING</Text><Text style={styles.title}>{tracked?`LB #${tracked.order_number}`:created?`LB #${created.order_number}`:"Track an order"}</Text><TextInput style={styles.input} placeholder="Tracking token" autoCapitalize="none" value={trackingToken} onChangeText={setTrackingToken}/><Pressable style={styles.primary} onPress={()=>void refresh()}><Text style={styles.primaryText}>Refresh status</Text></Pressable>{tracked?<View style={styles.trackCard}><Text style={styles.trackStatus}>{tracked.status.replaceAll("_"," ").toUpperCase()}</Text><Text style={styles.description}>{tracked.fulfilment} · {money(Number(tracked.total))}</Text>{tracked.events?.map((event,index)=><View key={`${event.created_at}-${index}`} style={styles.event}><Text style={styles.eventLabel}>{event.label}</Text><Text style={styles.eventTime}>{new Date(event.created_at).toLocaleString()}</Text></View>)}</View>:null}</>}
+      {view==="track"&&<><Text style={styles.kicker}>PRIVATE TRACKING</Text><Text style={styles.title}>{tracked?`LB #${tracked.order_number}`:created?`LB #${created.order_number}`:"Track an order"}</Text><TextInput style={styles.input} placeholder="Tracking token" autoCapitalize="none" value={trackingToken} onChangeText={setTrackingToken}/><Pressable style={styles.primary} onPress={()=>void refresh()}><Text style={styles.primaryText}>Refresh status</Text></Pressable>{tracked?<View style={styles.trackCard}><Text style={styles.trackStatus}>{tracked.status.replaceAll("_"," ").toUpperCase()}</Text><Text style={styles.description}>{tracked.fulfilment} · {money(Number(tracked.total))}</Text>{tracked.events?.map((event,index)=><View key={`${event.created_at}-${index}`} style={styles.event}><Text style={styles.eventLabel}>{event.label}</Text><Text style={styles.eventTime}>{new Date(event.created_at).toLocaleString()}</Text></View>)}</View>:null}<Pressable style={styles.secondary} onPress={()=>void forgetTracking()}><Text style={styles.secondaryText}>Forget saved tracking</Text></Pressable></>}
     </ScrollView>
   </SafeAreaView>;
 }
