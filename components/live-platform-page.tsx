@@ -10,15 +10,18 @@ import {
   LiveEmployeeLeave,
   LiveEmployeePayroll,
   LiveKitchenBoard,
-  LiveManagementAnalytics,
-  LiveManagementDashboard,
-  LiveManagementInventory,
   LiveManagementLeave,
   LiveManagementPayroll,
-  LiveManagementSchedule,
   LiveManagementSettings,
   LiveStaffDirectory,
 } from "@/components/live-operations";
+import {
+  LiveManagementAnalyticsV2,
+  LiveManagementDashboardV2,
+  LiveManagementInventoryV2,
+  LiveManagementScheduleV2,
+  LiveRetentionControlV2,
+} from "@/components/live-operations-v2";
 import {
   LiveEmployeeSuggestions,
   LiveManagementAttendance,
@@ -46,21 +49,21 @@ function Header({ route }: { route: PlatformRoute }) {
 }
 
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
-  if (route.path === "/management/dashboard") return <LiveManagementDashboard />;
+  if (route.path === "/management/dashboard") return <LiveManagementDashboardV2 />;
   if (route.path === "/management/orders") return <LiveManagementOrders />;
   if (route.path === "/management/orders/retrieve") return <LiveCounterRetrieve />;
-  if (route.path === "/management/customers") return <LiveManagementCustomers />;
+  if (route.path === "/management/customers") return <div className="grid gap-4"><LiveManagementCustomers /><LiveRetentionControlV2 /></div>;
   if (route.path === "/management/menu") return <LiveMenuControl />;
-  if (route.path === "/management/inventory") return <LiveManagementInventory />;
+  if (route.path === "/management/inventory") return <LiveManagementInventoryV2 />;
   if (route.path === "/management/employees") return <LiveStaffDirectory />;
-  if (route.path === "/management/attendance") return <div className="grid gap-4"><LiveManagementAttendance /><LiveManagementSchedule /></div>;
+  if (route.path === "/management/attendance") return <div className="grid gap-4"><LiveManagementAttendance /><LiveManagementScheduleV2 /></div>;
   if (route.path === "/management/fines") return <LiveManagementAttendance />;
   if (route.path === "/management/payroll") return <LiveManagementPayroll />;
   if (route.path === "/management/leave") return <LiveManagementLeave />;
   if (route.path === "/management/documents") return <LiveManagementDocuments />;
   if (route.path === "/management/contracts") return <LiveManagementDocuments contractMode />;
   if (["/management/announcements","/management/suggestions"].includes(route.path)) return <LiveManagementComms />;
-  if (route.path === "/management/reports") return <LiveManagementAnalytics />;
+  if (route.path === "/management/reports") return <LiveManagementAnalyticsV2 />;
   if (["/management/stars","/management/leaderboard"].includes(route.path)) return <LiveWorkforcePerformance />;
   if (route.path === "/management/audit") return <LiveManagementAudit />;
   if (route.path === "/management/settings") return <div className="grid gap-3"><LiveManagementSettings /><LaunchReadinessPanel /></div>;
