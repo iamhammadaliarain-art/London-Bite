@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import type { PlatformRoute } from "@/lib/platform";
 import { PlatformPage } from "@/components/platform-page";
-import { LaunchReadinessPanel } from "@/components/launch-readiness";
 import {
   LiveEmployeeAttendance,
   LiveEmployeeHome,
@@ -12,7 +11,6 @@ import {
   LiveKitchenBoard,
   LiveManagementLeave,
   LiveManagementPayroll,
-  LiveManagementSettings,
   LiveStaffDirectory,
 } from "@/components/live-operations";
 import {
@@ -24,6 +22,7 @@ import {
   LiveManagementCustomersRetentionReviewed,
   LiveManagementDashboardReviewed,
 } from "@/components/live-management-review-fixes";
+import { LiveManagementSettingsReviewed } from "@/components/live-settings-reviewed";
 import {
   LiveEmployeeSuggestions,
   LiveManagementAttendance,
@@ -67,7 +66,7 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/reports") return <LiveManagementAnalyticsV2 />;
   if (["/management/stars","/management/leaderboard"].includes(route.path)) return <LiveWorkforcePerformance />;
   if (route.path === "/management/audit") return <LiveManagementAudit />;
-  if (route.path === "/management/settings") return <div className="grid gap-3"><LiveManagementSettings /><LaunchReadinessPanel /></div>;
+  if (route.path === "/management/settings") return <LiveManagementSettingsReviewed />;
 
   if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <LiveCounterMembershipPOS />;
   if (["/ipos/retrieve","/ipos/payments","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
