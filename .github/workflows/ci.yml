@@ -58,7 +58,16 @@ jobs:
           curl -fsS http://127.0.0.1:3000/api/platform/routes > /tmp/routes.json
           node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==53||j.primaryCount!==32||j.routes.length!==53||j.primaryRoutes.length!==32)process.exit(1)'
 
-      - name: Smoke test primary and secondary routes
+      - name: Smoke test customer commerce
+        run: |
+          for path in / /order /manifest.webmanifest /robots.txt /sitemap.xml; do
+            echo "Checking customer path $path"
+            curl -fsS "http://127.0.0.1:3000$path" > /dev/null
+          done
+          curl -fsS http://127.0.0.1:3000/ | grep -q "London Bite"
+          curl -fsS http://127.0.0.1:3000/order | grep -q "London Bite"
+
+      - name: Smoke test primary and secondary operations routes
         run: |
           for path in /management/dashboard /management/orders/retrieve /ipos/new-order /kitchen/queue /rider/active-delivery /employee/attendance /customer/track /customer/receipt; do
             echo "Checking $path"
