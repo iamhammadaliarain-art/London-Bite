@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 const SUPABASE_URL = "https://yaywauauqzfcmrzmbdkr.supabase.co";
-const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6InlheXdhdWF1cXpmY21yem1iZGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTQ4MTQsImV4cCI6MjA3NzQ3MDgxNH0.IRA92oEpvvFBEOJaJ-w4v9XURjgg27ya9pk_xHcDb9A";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlheXdhdWF1cXpmY21yem1iZGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4OTQ4MTQsImV4cCI6MjA3NzQ3MDgxNH0.IRA92oEpvvFBEOJaJ-w4v9XURjgg27ya9pk_xHcDb9A";
 const TRACKING_STORAGE_KEY = "lb.native.tracking-token";
 
 type Product = { id:string;slug:string;name:string;category:string;description:string;price:number;image_url:string|null;badge:string|null;is_available:boolean };
