@@ -26,7 +26,17 @@ jobs:
           node -e 'const p=require("./package.json");if(!p.devDependencies?.tailwindcss||!p.devDependencies?.["@tailwindcss/postcss"])process.exit(1)'
           test -f postcss.config.mjs
           grep -q '@import "tailwindcss"' app/globals.css
+          grep -q -- '--shadow-lb-card' app/globals.css
           test -f public/brand/london-bite-logo.png
+
+      - name: Verify customer PWA privacy boundary
+        run: |
+          test -f app/offline/page.tsx
+          test -f components/pwa-runtime.tsx
+          grep -q 'PRIVATE_PREFIXES' public/sw.js
+          grep -q '"/management"' public/sw.js
+          grep -q '"/employee"' public/sw.js
+          grep -q '"/offline"' public/sw.js
 
       - name: Typecheck
         run: npm run typecheck
@@ -60,12 +70,13 @@ jobs:
 
       - name: Smoke test customer commerce
         run: |
-          for path in / /order /feedback /manifest.webmanifest /robots.txt /sitemap.xml; do
+          for path in / /order /feedback /offline /manifest.webmanifest /robots.txt /sitemap.xml /sw.js; do
             echo "Checking customer path $path"
             curl -LfsS "http://127.0.0.1:3000$path" > /dev/null
           done
           curl -fsS http://127.0.0.1:3000/ | grep -q "London Bite"
           curl -fsS http://127.0.0.1:3000/order | grep -q "London Bite"
+          curl -fsS http://127.0.0.1:3000/offline | grep -q "Connection unavailable"
 
       - name: Smoke test every registered platform route
         run: |
