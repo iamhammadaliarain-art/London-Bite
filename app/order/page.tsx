@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CustomerOrderingV2 } from "@/components/customer-ordering-v2";
+import { CustomerOrderingPrivacyGuard } from "@/components/customer-ordering-privacy-guard";
 
 export const metadata: Metadata = {
   title: "Order Online | London Bite",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function OrderPage() {
-  return <CustomerOrderingV2 />;
+  return <CustomerOrderingPrivacyGuard />;
 }
