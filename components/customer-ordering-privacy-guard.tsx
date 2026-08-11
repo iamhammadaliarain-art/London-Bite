@@ -11,14 +11,14 @@ export function CustomerOrderingPrivacyGuard() {
   useEffect(() => {
     const storagePrototype = Storage.prototype;
     const originalRemoveItem = storagePrototype.removeItem;
-
-    storagePrototype.removeItem = function patchedRemoveItem(key: string) {
+    const patchedRemoveItem: Storage["removeItem"] = function (this: Storage, key: string) {
       originalRemoveItem.call(this, key);
       if (this === window.localStorage && key === "lb.orders") {
         window.dispatchEvent(new Event(PRIVACY_CLEAR_EVENT));
       }
     };
 
+    storagePrototype.removeItem = patchedRemoveItem;
     const handlePrivacyClear = () => setEpoch((value) => value + 1);
     window.addEventListener(PRIVACY_CLEAR_EVENT, handlePrivacyClear);
 
