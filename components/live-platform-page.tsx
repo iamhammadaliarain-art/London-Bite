@@ -19,6 +19,14 @@ import {
   LiveRiderBoard,
   LiveStaffDirectory,
 } from "@/components/live-operations";
+import {
+  LiveCounterPOS,
+  LiveEmployeeSuggestions,
+  LiveManagementAttendance,
+  LiveManagementAudit,
+  LiveManagementComms,
+  LiveMenuControl,
+} from "@/components/live-extra";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
@@ -26,18 +34,24 @@ function Header({ route }: { route: PlatformRoute }) {
 
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (["/management/dashboard","/management/orders","/management/orders/retrieve"].includes(route.path)) return <LiveManagementDashboard />;
+  if (route.path === "/management/menu") return <LiveMenuControl />;
   if (["/management/employees","/management/documents","/management/contracts"].includes(route.path)) return <LiveStaffDirectory />;
   if (route.path === "/management/inventory") return <LiveManagementInventory />;
   if (route.path === "/management/attendance") return <LiveManagementSchedule />;
-  if (["/management/payroll","/management/fines"].includes(route.path)) return <LiveManagementPayroll />;
+  if (route.path === "/management/fines") return <LiveManagementAttendance />;
+  if (route.path === "/management/payroll") return <LiveManagementPayroll />;
   if (route.path === "/management/leave") return <LiveManagementLeave />;
-  if (["/management/reports","/management/audit","/management/stars","/management/leaderboard"].includes(route.path)) return <LiveManagementAnalytics />;
+  if (["/management/announcements","/management/suggestions"].includes(route.path)) return <LiveManagementComms />;
+  if (["/management/reports","/management/stars","/management/leaderboard"].includes(route.path)) return <LiveManagementAnalytics />;
+  if (route.path === "/management/audit") return <LiveManagementAudit />;
   if (route.path === "/management/settings") return <LiveManagementSettings />;
+  if (route.module === "iPOS") return <LiveCounterPOS />;
   if (route.module === "Kitchen") return <LiveKitchenBoard />;
   if (route.module === "Rider") return <LiveRiderBoard />;
   if (route.path === "/employee/attendance") return <LiveEmployeeAttendance />;
   if (route.path === "/employee/leave") return <LiveEmployeeLeave />;
   if (["/employee/payroll","/employee/fines","/employee/stars"].includes(route.path)) return <LiveEmployeePayroll />;
+  if (route.path === "/employee/suggestions") return <LiveEmployeeSuggestions />;
   if (route.module === "Employee") return <LiveEmployeeHome />;
   return null;
 }
