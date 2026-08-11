@@ -5,6 +5,7 @@ export type AuthSession = {
   access_token: string;
   refresh_token?: string;
   expires_in?: number;
+  expires_at?: number;
   user?: { id: string; email?: string };
 };
 
@@ -70,6 +71,20 @@ export type ManagementOrder = {
   created_at: string;
 };
 
+export type OperationsOrderRecord = {
+  id: string;
+  order_number: number;
+  status: "accepted" | "preparing" | "ready" | "out_for_delivery" | "delivered" | "cancelled";
+  fulfilment: "delivery" | "pickup";
+  payment_status: string;
+  total: number;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  delivery_address: string | null;
+  items: { name: string; quantity: number }[];
+};
+
 export type ManagementEmployee = {
   id: string;
   employee_code: string;
@@ -123,13 +138,76 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return value as T;
 }
 
-export async function lbRpc<T>(name: string, payload: Record<string, unknown> = {}, token?: string): Promise<T> {
-  const response = await fetch(`${LB_SUPABASE_URL}/rest/v1/rpc/${name}`, {
+function normalizeSession(session: AuthSession): AuthSession {
+  if (session.expires_at || !session.expires_in) return session;
+  return { ...session, expires_at: Math.floor(Date.now() / 1000) + Number(session.expires_in) };
+}
+
+export function readStoredLbSession(): AuthSession | null {
+  if (typeof window === "undefined") return null;
+  try { return JSON.parse(localStorage.getItem("lb.auth.session") ?? "null") as AuthSession | null; } catch { return null; }
+}
+
+export function storeLbSession(session: AuthSession | null) {
+  if (typeof window === "undefined") return;
+  if (!session) localStorage.removeItem("lb.auth.session");
+  else localStorage.setItem("lb.auth.session", JSON.stringify(normalizeSession(session)));
+}
+
+export async function lbRefreshSession(refreshToken: string): Promise<AuthSession> {
+  const response = await fetch(`${LB_SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
     method: "POST",
-    headers: jsonHeaders(token),
+    headers: { apikey: LB_SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+    cache: "no-store",
+  });
+  const refreshed = normalizeSession(await parseResponse<AuthSession>(response));
+  storeLbSession(refreshed);
+  return refreshed;
+}
+
+async function resolveStaffToken(requestedToken?: string): Promise<string | undefined> {
+  if (!requestedToken || typeof window === "undefined") return requestedToken;
+  const stored = readStoredLbSession();
+  if (!stored) return requestedToken;
+
+  const now = Math.floor(Date.now() / 1000);
+  const shouldRefresh = Boolean(stored.refresh_token && stored.expires_at && stored.expires_at <= now + 45);
+  if (shouldRefresh && stored.refresh_token) {
+    try { return (await lbRefreshSession(stored.refresh_token)).access_token; }
+    catch { storeLbSession(null); return requestedToken; }
+  }
+
+  return stored.access_token || requestedToken;
+}
+
+export async function lbRpc<T>(name: string, payload: Record<string, unknown> = {}, token?: string): Promise<T> {
+  let effectiveToken = await resolveStaffToken(token);
+  let response = await fetch(`${LB_SUPABASE_URL}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: jsonHeaders(effectiveToken),
     body: JSON.stringify(payload),
     cache: "no-store",
   });
+
+  if (response.status === 401 && token && typeof window !== "undefined") {
+    const stored = readStoredLbSession();
+    if (stored?.refresh_token) {
+      try {
+        const refreshed = await lbRefreshSession(stored.refresh_token);
+        effectiveToken = refreshed.access_token;
+        response = await fetch(`${LB_SUPABASE_URL}/rest/v1/rpc/${name}`, {
+          method: "POST",
+          headers: jsonHeaders(effectiveToken),
+          body: JSON.stringify(payload),
+          cache: "no-store",
+        });
+      } catch {
+        storeLbSession(null);
+      }
+    }
+  }
+
   return parseResponse<T>(response);
 }
 
@@ -139,7 +217,7 @@ export async function lbSignIn(email: string, password: string): Promise<AuthSes
     headers: { apikey: LB_SUPABASE_ANON_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ email: email.trim(), password }),
   });
-  return parseResponse<AuthSession>(response);
+  return normalizeSession(await parseResponse<AuthSession>(response));
 }
 
 export async function lbSignUp(email: string, password: string): Promise<AuthSession | { user?: { id: string; email?: string } }> {
@@ -148,7 +226,8 @@ export async function lbSignUp(email: string, password: string): Promise<AuthSes
     headers: { apikey: LB_SUPABASE_ANON_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ email: email.trim(), password }),
   });
-  return parseResponse(response);
+  const result = await parseResponse<AuthSession | { user?: { id: string; email?: string } }>(response);
+  return "access_token" in result && result.access_token ? normalizeSession(result as AuthSession) : result;
 }
 
 export async function getLiveMenu() {
@@ -189,7 +268,7 @@ export async function captureLiveEvent(eventName: string, sessionId?: string, so
 
 export const getManagementDashboard = (token: string) => lbRpc<ManagementDashboardData>("lb_management_dashboard", {}, token);
 export const getManagementOrders = (token: string) => lbRpc<ManagementOrder[]>("lb_management_orders", {}, token);
-export const getOperationsOrders = (token: string) => lbRpc<any[]>("lb_operations_orders", {}, token);
+export const getOperationsOrders = (token: string) => lbRpc<OperationsOrderRecord[]>("lb_operations_orders", {}, token);
 export const updateManagementOrder = (token: string, orderId: string, status: string) => lbRpc<{ id: string; status: string }>("lb_management_update_order", { p_order_id: orderId, p_status: status }, token);
 export const getManagementEmployees = (token: string) => lbRpc<ManagementEmployee[]>("lb_management_employees", {}, token);
 export const createManagementEmployee = (token: string, input: { name: string; role: string; station?: string; phone?: string }) => lbRpc<{ id: string; employee_code: string }>("lb_management_create_employee", { p_name: input.name, p_role: input.role, p_station: input.station ?? null, p_phone: input.phone ?? null }, token);
@@ -201,14 +280,3 @@ export const adjustManagementInventory = (token: string, input: { name: string; 
 export const getStaffSnapshot = (token: string) => lbRpc<StaffSnapshot>("lb_staff_snapshot", {}, token);
 export const completeStaffTask = (token: string, taskId: string, evidenceUrl?: string) => lbRpc("lb_staff_complete_task", { p_task_id: taskId, p_evidence_url: evidenceUrl ?? null }, token);
 export const requestStaffLeave = (token: string, start: string, end: string, reason: string) => lbRpc("lb_staff_request_leave", { p_start: start, p_end: end, p_reason: reason }, token);
-
-export function readStoredLbSession(): AuthSession | null {
-  if (typeof window === "undefined") return null;
-  try { return JSON.parse(localStorage.getItem("lb.auth.session") ?? "null") as AuthSession | null; } catch { return null; }
-}
-
-export function storeLbSession(session: AuthSession | null) {
-  if (typeof window === "undefined") return;
-  if (!session) localStorage.removeItem("lb.auth.session");
-  else localStorage.setItem("lb.auth.session", JSON.stringify(session));
-}
