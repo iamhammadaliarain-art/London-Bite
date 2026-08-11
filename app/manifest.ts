@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     display_override: ["window-controls-overlay", "standalone"],
-    background_color: "#f4f7fb",
-    theme_color: "#07182f",
+    background_color: "#000000",
+    theme_color: "#2928a7",
     orientation: "portrait-primary",
     categories: ["food", "shopping", "lifestyle"],
     shortcuts: [
@@ -20,8 +20,8 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: "Reorder", short_name: "Reorder", description: "Open your saved order history", url: "/order?view=history&utm_source=pwa_shortcut" },
     ],
     icons: [
-      { src: "/brand/london-bite-logo.png", sizes: "any", type: "image/png", purpose: "any" },
-      { src: "/brand/london-bite-logo.png", sizes: "any", type: "image/png", purpose: "maskable" },
+      { src: "/brand/london-bite-official.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+      { src: "/brand/london-bite-official.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
     ],
   };
 }
