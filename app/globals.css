@@ -1,57 +1,122 @@
 @import "tailwindcss";
 
 @theme {
-  --color-lb-navy: #07182f;
-  --color-lb-blue: #0e4a86;
-  --color-lb-red: #d71f2b;
-  --color-lb-ink: #172033;
-  --color-lb-muted: #6d7788;
-  --color-lb-line: #e6eaf0;
-  --color-lb-bg: #f5f7fa;
+  --color-lb-navy: #090909;
+  --color-lb-blue: #2928a7;
+  --color-lb-red: #ff1f28;
+  --color-lb-ink: #15151b;
+  --color-lb-muted: #6e7080;
+  --color-lb-line: #dedfe6;
+  --color-lb-bg: #050505;
   --color-lb-card: #ffffff;
-  --color-lb-green: #167a4c;
-  --color-lb-amber: #a86400;
+  --color-lb-green: #168654;
+  --color-lb-amber: #b46a00;
+  --radius-lb-sm: 14px;
+  --radius-lb-md: 18px;
+  --radius-lb-lg: 24px;
+  --radius-lb-xl: 30px;
+  --shadow-lb-card: 0 18px 60px rgba(0, 0, 0, 0.18);
+  --shadow-lb-float: 0 28px 90px rgba(0, 0, 0, 0.28);
 }
 
 :root {
-  --navy: #07182f;
-  --blue: #0e4a86;
-  --red: #d71f2b;
-  --ink: #172033;
-  --muted: #6d7788;
-  --line: #e6eaf0;
-  --bg: #f5f7fa;
+  --navy: #090909;
+  --blue: #2928a7;
+  --red: #ff1f28;
+  --ink: #15151b;
+  --muted: #6e7080;
+  --line: #dedfe6;
+  --bg: #050505;
   --card: #ffffff;
-  --green: #167a4c;
-  --amber: #a86400;
+  --green: #168654;
+  --amber: #b46a00;
   --radius: 18px;
+  color-scheme: light;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+  background: #000000;
+}
+
 body {
   min-height: 100%;
   margin: 0;
   padding: 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(41, 40, 167, 0.24), transparent 30rem),
+    radial-gradient(circle at 95% 12%, rgba(255, 31, 40, 0.18), transparent 28rem),
+    #000000;
+  color: #f7f7fb;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-wrap: anywhere;
 }
 
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+::selection {
+  background: rgba(41, 40, 167, 0.34);
+  color: #ffffff;
 }
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+summary {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button {
   cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(41, 40, 167, 0.64);
+  outline-offset: 3px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #9294a0;
+  opacity: 1;
+}
+
+img {
+  max-width: 100%;
+}
+
+/* The supplied London Bite mark is the canonical visual identity everywhere. */
+img[alt="London Bite"] {
+  content: url("/brand/london-bite-official.svg");
+  background: #000000;
+  object-fit: contain;
+}
+
+/* Customer commerce historically used a warm-grey canvas. Keep the component
+   structure, but force the shared public surface into the official black brand. */
+[class~="bg-[#f4f5f2]"] {
+  background:
+    radial-gradient(circle at 10% 4%, rgba(41, 40, 167, 0.22), transparent 30rem),
+    radial-gradient(circle at 92% 16%, rgba(255, 31, 40, 0.16), transparent 28rem),
+    #000000 !important;
 }
 
 details > summary {
@@ -60,4 +125,80 @@ details > summary {
 
 details > summary::-webkit-details-marker {
   display: none;
+}
+
+footer .text-lb-navy {
+  color: #ffffff;
+}
+
+footer .text-lb-muted {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.lb-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.lb-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.lb-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lb-safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+.lb-glass-noise {
+  position: relative;
+  isolation: isolate;
+}
+
+.lb-glass-noise::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.22));
+  content: "";
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #555764;
+    --line: #cfd0d8;
+  }
+
+  :focus-visible {
+    outline-color: #2928a7;
+  }
 }
