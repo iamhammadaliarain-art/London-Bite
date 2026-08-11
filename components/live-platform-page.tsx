@@ -17,11 +17,13 @@ import {
 } from "@/components/live-operations";
 import {
   LiveManagementAnalyticsV2,
-  LiveManagementDashboardV2,
   LiveManagementInventoryV2,
-  LiveManagementScheduleV2,
-  LiveRetentionControlV2,
 } from "@/components/live-operations-v2";
+import {
+  LiveManagementAttendanceScheduleReviewed,
+  LiveManagementCustomersRetentionReviewed,
+  LiveManagementDashboardReviewed,
+} from "@/components/live-management-review-fixes";
 import {
   LiveEmployeeSuggestions,
   LiveManagementAttendance,
@@ -35,7 +37,6 @@ import {
   LiveEmployeeProfile,
   LiveKitchenQc,
   LiveKitchenStock,
-  LiveManagementCustomers,
   LiveManagementDocuments,
   LiveManagementOrders,
   LiveRiderDailySheet,
@@ -49,14 +50,14 @@ function Header({ route }: { route: PlatformRoute }) {
 }
 
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
-  if (route.path === "/management/dashboard") return <LiveManagementDashboardV2 />;
+  if (route.path === "/management/dashboard") return <LiveManagementDashboardReviewed />;
   if (route.path === "/management/orders") return <LiveManagementOrders />;
   if (route.path === "/management/orders/retrieve") return <LiveCounterRetrieve />;
-  if (route.path === "/management/customers") return <div className="grid gap-4"><LiveManagementCustomers /><LiveRetentionControlV2 /></div>;
+  if (route.path === "/management/customers") return <LiveManagementCustomersRetentionReviewed />;
   if (route.path === "/management/menu") return <LiveMenuControl />;
   if (route.path === "/management/inventory") return <LiveManagementInventoryV2 />;
   if (route.path === "/management/employees") return <LiveStaffDirectory />;
-  if (route.path === "/management/attendance") return <div className="grid gap-4"><LiveManagementAttendance /><LiveManagementScheduleV2 /></div>;
+  if (route.path === "/management/attendance") return <LiveManagementAttendanceScheduleReviewed />;
   if (route.path === "/management/fines") return <LiveManagementAttendance />;
   if (route.path === "/management/payroll") return <LiveManagementPayroll />;
   if (route.path === "/management/leave") return <LiveManagementLeave />;
