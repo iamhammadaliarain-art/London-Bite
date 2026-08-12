@@ -8,7 +8,6 @@ import {
   LiveEmployeeHome,
   LiveEmployeeLeave,
   LiveEmployeePayroll,
-  LiveKitchenBoard,
   LiveManagementLeave,
   LiveManagementPayroll,
   LiveStaffDirectory,
@@ -20,7 +19,6 @@ import {
 import {
   LiveManagementAttendanceScheduleReviewed,
   LiveManagementCustomersRetentionReviewed,
-  LiveManagementDashboardReviewed,
 } from "@/components/live-management-review-fixes";
 import { LiveManagementSettingsReviewed } from "@/components/live-settings-reviewed";
 import {
@@ -39,18 +37,25 @@ import {
   LiveManagementDocuments,
   LiveManagementOrders,
   LiveRiderDailySheet,
-  LiveRiderJobs,
   LiveRiderPerformance,
 } from "@/components/live-route-completion";
 import { LiveCounterMembershipPOS, LiveMembership, LiveWorkforcePerformance } from "@/components/live-growth-performance";
+import {
+  CashControlOperational,
+  CounterOperationalFlow,
+  FounderOperationalCommand,
+  KitchenOperationalBoard,
+  RiderOperationalBoard,
+  ServiceOperationalBoard,
+} from "@/components/operational-order-flow";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
 }
 
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
-  if (route.path === "/management/dashboard") return <LiveManagementDashboardReviewed />;
-  if (route.path === "/management/orders") return <LiveManagementOrders />;
+  if (route.path === "/management/dashboard") return <FounderOperationalCommand />;
+  if (route.path === "/management/orders") return <FounderOperationalCommand />;
   if (route.path === "/management/orders/retrieve") return <LiveCounterRetrieve />;
   if (route.path === "/management/customers") return <LiveManagementCustomersRetentionReviewed />;
   if (route.path === "/management/menu") return <LiveMenuControl />;
@@ -68,21 +73,22 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/audit") return <LiveManagementAudit />;
   if (route.path === "/management/settings") return <LiveManagementSettingsReviewed />;
 
-  if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <LiveCounterMembershipPOS />;
-  if (["/ipos/retrieve","/ipos/payments","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
+  if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <CounterOperationalFlow />;
+  if (route.path === "/ipos/retrieve") return <ServiceOperationalBoard />;
+  if (["/ipos/payments","/ipos/receipts"].includes(route.path)) return <CashControlOperational />;
   if (route.path === "/ipos/customers") return <LiveCounterRetrieve customerMode />;
   if (route.path === "/ipos/membership") return <LiveMembership />;
 
-  if (["/kitchen","/kitchen/queue","/kitchen/preparing","/kitchen/ready"].includes(route.path)) return <LiveKitchenBoard />;
+  if (["/kitchen","/kitchen/queue","/kitchen/preparing","/kitchen/ready"].includes(route.path)) return <KitchenOperationalBoard />;
   if (route.path === "/kitchen/stock") return <LiveKitchenStock />;
   if (route.path === "/kitchen/qc") return <LiveKitchenQc />;
 
-  if (["/rider","/rider/orders","/rider/active-delivery"].includes(route.path)) return <LiveRiderJobs />;
-  if (route.path === "/rider/history") return <LiveRiderJobs history />;
+  if (["/rider","/rider/orders","/rider/active-delivery"].includes(route.path)) return <RiderOperationalBoard />;
+  if (route.path === "/rider/history") return <RiderOperationalBoard />;
   if (route.path === "/rider/daily-sheet") return <LiveRiderDailySheet />;
   if (route.path === "/rider/performance") return <LiveRiderPerformance />;
 
-  if (route.path === "/employee") return <LiveEmployeeHome />;
+  if (route.path === "/employee") return <ServiceOperationalBoard />;
   if (route.path === "/employee/profile") return <LiveEmployeeProfile />;
   if (route.path === "/employee/attendance") return <LiveEmployeeAttendance />;
   if (route.path === "/employee/leave") return <LiveEmployeeLeave />;
