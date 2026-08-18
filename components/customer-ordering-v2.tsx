@@ -126,6 +126,7 @@ export function CustomerOrderingV2() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [livePriceBySlug, setLivePriceBySlug] = useState<Record<string, number>>({});
   const lastNotifiedStatus = useRef<string | null>(null);
 
   useEffect(() => {
@@ -140,7 +141,10 @@ export function CustomerOrderingV2() {
     setHydrated(true);
     track("order_app_opened", { initial_view: requested ?? "home" });
     void getLiveMenu()
-      .then(() => setMenuNotice("Official menu · kitchen connected"))
+      .then((items) => {
+        setLivePriceBySlug(Object.fromEntries(items.filter((item) => item.is_available).map((item) => [item.slug, Number(item.price)])));
+        setMenuNotice("Official menu · kitchen connected");
+      })
       .catch(() => setMenuNotice("Official menu · reconnecting at checkout"));
   }, []);
 
@@ -153,6 +157,7 @@ export function CustomerOrderingV2() {
   const cartCount = cartLines.reduce((sum, line) => sum + line.quantity, 0);
   const subtotal = cartLines.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
   const quote = quoteOrder({ subtotal, paymentMethod });
+  const needsWhatsAppCheckout = cartLines.some((line) => livePriceBySlug[line.product.slug] !== line.product.price);
   const filtered = useMemo(() => products.filter((product) => (category === "All" || product.category === category) && `${product.name} ${product.description} ${product.category}`.toLowerCase().includes(query.toLowerCase().trim())), [products, category, query]);
   const popular = useMemo(() => products.filter((item) => item.popular).slice(0, 4), [products]);
   const repeatSlugs = useMemo(() => { const counts = new Map<string, number>(); orders.flatMap((order) => order.items).forEach((item) => counts.set(item.slug, (counts.get(item.slug) ?? 0) + item.quantity)); return [...counts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([slug])=>slug); }, [orders]);
@@ -175,6 +180,23 @@ export function CustomerOrderingV2() {
     }
     setSubmitting(true);
     try {
+      if (needsWhatsAppCheckout) {
+        const message = [
+          "Hi London Bite, I would like to place this order:",
+          "",
+          ...cartLines.map((line) => `${line.quantity} × ${line.product.name} — ${money(line.product.price * line.quantity)}`),
+          "",
+          `Total: ${money(quote.total)}`,
+          `Fulfilment: ${fulfilment === "delivery" ? "Delivery" : "Pickup"}`,
+          `Name: ${profile.name.trim()}`,
+          ...(fulfilment === "delivery" ? [`Address: ${profile.address.trim()}`] : []),
+          ...(scheduleIso ? [`Scheduled for: ${new Date(scheduleIso).toLocaleString("en-PK", { timeZone: "Asia/Karachi" })}`] : []),
+          ...(referralCode.trim() ? [`Referral: ${referralCode.trim()}`] : []),
+        ].join("\n");
+        track("whatsapp_checkout_started", { total: quote.total, fulfilment, items: cartLines.length });
+        window.location.assign(`${londonBiteFacts.whatsappUrl}?text=${encodeURIComponent(message)}`);
+        return;
+      }
       const params = new URLSearchParams(window.location.search);
       const source = params.get("utm_source") ?? (referralCode.trim() ? "referral" : "web");
       const created = await createEnhancedOrder({ name: profile.name, phone: profile.phone, address: profile.address, fulfilment, paymentMethod, items: cartLines.map((line) => ({ slug: line.product.slug, quantity: line.quantity })), source, scheduledFor: scheduleIso, referralCode: referralCode.trim() || null });
@@ -223,7 +245,7 @@ export function CustomerOrderingV2() {
   const renderCheckout = () => <form onSubmit={submitOrder} className="grid gap-3 xl:grid-cols-[1fr_390px]"><section className={`rounded-[32px] p-5 sm:p-6 ${glass}`}><span className="text-[10px] font-black uppercase tracking-[0.14em] text-lb-red">Guest checkout</span><h2 className="mb-5 mt-1 text-2xl font-black text-lb-navy">Fast checkout, still under your control.</h2><div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-xs font-black text-lb-navy">Name<input required value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} className={field} /></label><label className="grid gap-1.5 text-xs font-black text-lb-navy">Phone<input required value={profile.phone} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} className={field} inputMode="tel" /></label></div>{fulfilment === "delivery" && <div className="mt-3 grid gap-2"><label className="grid gap-1.5 text-xs font-black text-lb-navy">Delivery address<textarea required value={profile.address} onChange={(event) => setProfile({ ...profile, address: event.target.value })} className={`${field} min-h-28 resize-y py-3`} /></label>{addresses.length > 0 && <div className="flex flex-wrap gap-2">{addresses.map((item) => <button type="button" key={item.id} className={chip} onClick={() => setProfile({ ...profile, address: item.address })}>{item.label}</button>)}</div>}<div className="flex gap-2"><input className={`${field} min-w-0 flex-1`} value={addressLabel} onChange={(event)=>setAddressLabel(event.target.value)} placeholder="Home / Office" /><button type="button" className={secondary} onClick={saveAddress}>Save address</button></div></div>}
     <div className={`mt-5 rounded-[22px] p-4 ${softGlass}`}><div className="flex items-center justify-between gap-3"><div><strong className="block text-sm text-lb-navy">Schedule this order</strong><span className="text-[10px] text-lb-muted">30 minutes to 7 days ahead</span></div><button type="button" className={`${chip} ${scheduleEnabled ? "bg-lb-navy text-white" : ""}`} onClick={() => setScheduleEnabled((value) => !value)}>{scheduleEnabled ? "Scheduled" : "Order now"}</button></div>{scheduleEnabled && <input type="datetime-local" className={`${field} mt-3 w-full`} value={scheduledFor} onChange={(event) => setScheduledFor(event.target.value)} />}</div>
     <label className="mt-4 grid gap-1.5 text-xs font-black text-lb-navy">Referral code <input className={field} value={referralCode} onChange={(event) => setReferralCode(event.target.value.toUpperCase())} placeholder="Optional code" maxLength={24} /></label>
-    <div className="mt-5"><span className="text-xs font-black text-lb-navy">Payment</span><div className="mt-2 grid gap-2 sm:grid-cols-2"><div className="min-h-16 rounded-[18px] bg-lb-navy p-3 text-left text-xs font-black text-white">Cash<span className="mt-1 block text-[10px] font-normal text-white/65">Pay on delivery / pickup</span></div><div className="min-h-16 rounded-[18px] border border-lb-navy/10 bg-white/50 p-3 text-left text-xs font-black text-lb-muted">Online<span className="mt-1 block text-[10px] font-normal">Enabled only after real merchant activation</span></div></div></div>{error && <p role="alert" className="mt-4 rounded-[16px] border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}</section><aside className={`self-start rounded-[32px] p-5 xl:sticky xl:top-24 ${glass}`}><div className="grid gap-2">{cartLines.map(({ product, quantity }) => <div key={product.slug} className="flex justify-between gap-3 text-xs"><span>{quantity} × {product.name}</span><strong>{money(product.price * quantity)}</strong></div>)}</div><div className="mt-4 flex justify-between border-t border-lb-navy/10 pt-4"><strong>Estimated total</strong><strong>{money(quote.total)}</strong></div>{scheduleEnabled && scheduledFor && <p className="mt-3 text-[10px] font-bold text-lb-blue">Scheduled: {new Date(scheduledFor).toLocaleString()}</p>}<button type="submit" className={`${primary} mt-5 w-full`} disabled={submitting || cartLines.length === 0}>{submitting ? "Sending order…" : scheduleEnabled ? "Schedule order" : "Place order"}</button><p className="mb-0 mt-3 text-[10px] leading-4 text-lb-muted">Cash orders are transmitted directly to London Bite operations. Online charging stays disabled until merchant activation.</p></aside></form>;
+    <div className="mt-5"><span className="text-xs font-black text-lb-navy">Payment</span><div className="mt-2 grid gap-2 sm:grid-cols-2"><div className="min-h-16 rounded-[18px] bg-lb-navy p-3 text-left text-xs font-black text-white">Cash<span className="mt-1 block text-[10px] font-normal text-white/65">Pay on delivery / pickup</span></div><div className="min-h-16 rounded-[18px] border border-lb-navy/10 bg-white/50 p-3 text-left text-xs font-black text-lb-muted">Online<span className="mt-1 block text-[10px] font-normal">Enabled only after real merchant activation</span></div></div></div>{error && <p role="alert" className="mt-4 rounded-[16px] border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{error}</p>}</section><aside className={`self-start rounded-[32px] p-5 xl:sticky xl:top-24 ${glass}`}><div className="grid gap-2">{cartLines.map(({ product, quantity }) => <div key={product.slug} className="flex justify-between gap-3 text-xs"><span>{quantity} × {product.name}</span><strong>{money(product.price * quantity)}</strong></div>)}</div><div className="mt-4 flex justify-between border-t border-lb-navy/10 pt-4"><strong>Estimated total</strong><strong>{money(quote.total)}</strong></div>{scheduleEnabled && scheduledFor && <p className="mt-3 text-[10px] font-bold text-lb-blue">Scheduled: {new Date(scheduledFor).toLocaleString()}</p>}<button type="submit" className={`${primary} mt-5 w-full`} disabled={submitting || cartLines.length === 0}>{submitting ? "Preparing order…" : needsWhatsAppCheckout ? "Review order on WhatsApp" : scheduleEnabled ? "Schedule order" : "Place order"}</button><p className="mb-0 mt-3 text-[10px] leading-4 text-lb-muted">{needsWhatsAppCheckout ? "This official menu selection opens as a pre-filled WhatsApp order for you to review and send." : "Cash orders are transmitted directly to London Bite operations."} Online charging stays disabled until merchant activation.</p></aside></form>;
 
   const renderConfirmation = () => activeOrder ? <div className="mx-auto max-w-3xl"><section className={`rounded-[36px] p-7 text-center sm:p-10 ${glass}`}><span className="mx-auto grid size-16 place-items-center rounded-full bg-[#eaf8f0] text-2xl font-black text-lb-green">✓</span><span className="mt-5 block text-[10px] font-black uppercase tracking-[0.14em] text-lb-red">{activeOrder.scheduledFor ? "Order scheduled" : "Order accepted"}</span><h2 className="mb-2 mt-2 text-3xl font-black text-lb-navy">LB #{activeOrder.number}</h2><p className="mx-auto max-w-lg text-sm leading-6 text-lb-muted">Your order is in London Bite operations. Tracking updates automatically while this page is open.</p>{activeOrder.scheduledFor && <p className="text-sm font-black text-lb-blue">{new Date(activeOrder.scheduledFor).toLocaleString()}</p>}<div className="mx-auto mt-6 grid max-w-md grid-cols-2 gap-2"><div className={`rounded-[18px] p-3 ${softGlass}`}><span className="block text-[9px] text-lb-muted">Mode</span><strong className="text-xs capitalize">{activeOrder.fulfilment}</strong></div><div className={`rounded-[18px] p-3 ${softGlass}`}><span className="block text-[9px] text-lb-muted">Total</span><strong className="text-xs">{money(activeOrder.total)}</strong></div></div><div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" className={primary} onClick={() => go("track")}>Track order</button><a className={secondary} href={supportUrl}>WhatsApp support</a></div></section></div> : <EmptyState title="No active order" detail="Create an order first." />;
 
