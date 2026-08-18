@@ -43,6 +43,7 @@ import {
   LiveRiderPerformance,
 } from "@/components/live-route-completion";
 import { LiveCounterMembershipPOS, LiveMembership, LiveWorkforcePerformance } from "@/components/live-growth-performance";
+import { LiveCounterOrderTaking } from "@/components/counter-order-taking";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
@@ -68,7 +69,8 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/audit") return <LiveManagementAudit />;
   if (route.path === "/management/settings") return <LiveManagementSettingsReviewed />;
 
-  if (["/ipos","/ipos/new-order","/ipos/menu"].includes(route.path)) return <LiveCounterMembershipPOS />;
+  if (route.path === "/ipos/new-order") return <LiveCounterOrderTaking />;
+  if (["/ipos","/ipos/menu"].includes(route.path)) return <LiveCounterMembershipPOS />;
   if (["/ipos/retrieve","/ipos/payments","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
   if (route.path === "/ipos/customers") return <LiveCounterRetrieve customerMode />;
   if (route.path === "/ipos/membership") return <LiveMembership />;
