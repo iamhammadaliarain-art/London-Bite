@@ -56,33 +56,69 @@ export type AttendanceResult = {
   reason: string;
 };
 
+const STAFF_GEOFENCE_METERS = 50;
+
 export function evaluateCheckIn(checkIn: string, distanceMeters: number): AttendanceResult {
-  if (!Number.isFinite(distanceMeters) || distanceMeters > 100) {
-    return { accepted: false, status: "outside-geofence", fine: 0, reason: "Attendance requires the employee to be within 100 metres of London Bite." };
+  if (!Number.isFinite(distanceMeters) || distanceMeters > STAFF_GEOFENCE_METERS) {
+    return {
+      accepted: false,
+      status: "outside-geofence",
+      fine: 0,
+      reason: `Attendance requires the employee to be within ${STAFF_GEOFENCE_METERS} metres of London Bite.`,
+    };
   }
 
   const time = minutesFromClock(checkIn);
   const open = minutesFromClock("14:50");
-  const graceEnd = minutesFromClock("15:05");
+  const onTimeEnd = minutesFromClock("15:00");
   const fine200End = minutesFromClock("16:00");
   const fine500End = minutesFromClock("17:00");
 
-  if (time < open) return { accepted: false, status: "too-early", fine: 0, reason: "Check-in window opens at 2:50 PM." };
-  if (time <= graceEnd) return { accepted: true, status: "on-time", fine: 0, reason: "Check-in accepted within the attendance window." };
-  if (time <= fine200End) return { accepted: true, status: "late-200", fine: 200, reason: "Late after 3:05 PM." };
-  if (time <= fine500End) return { accepted: true, status: "late-500", fine: 500, reason: "Late after 4:00 PM." };
-  return { accepted: true, status: "full-shift-cut", fine: "full-shift", reason: "Arrival after 5:00 PM triggers a full shift cut." };
+  if (time < open) {
+    return { accepted: false, status: "too-early", fine: 0, reason: "Check-in window opens at 2:50 PM." };
+  }
+  if (time <= onTimeEnd) {
+    return { accepted: true, status: "on-time", fine: 0, reason: "Check-in accepted on time (2:50 PM–3:00 PM)." };
+  }
+  if (time <= fine200End) {
+    return { accepted: true, status: "late-200", fine: 200, reason: "Arrival after 3:00 PM automatically triggers a Rs 200 late fine." };
+  }
+  if (time <= fine500End) {
+    return { accepted: true, status: "late-500", fine: 500, reason: "Arrival after 4:00 PM automatically triggers a Rs 500 late fine." };
+  }
+  return {
+    accepted: true,
+    status: "full-shift-cut",
+    fine: "full-shift",
+    reason: "Arrival after 5:00 PM automatically triggers a full-shift wage cut.",
+  };
 }
 
-export function evaluateCheckout(checkOut: string) {
+export function evaluateCheckout(checkOut: string, distanceMeters = 0): AttendanceResult {
+  if (!Number.isFinite(distanceMeters) || distanceMeters > STAFF_GEOFENCE_METERS) {
+    return {
+      accepted: false,
+      status: "outside-geofence",
+      fine: 0,
+      reason: `Checkout requires the employee to be within ${STAFF_GEOFENCE_METERS} metres of London Bite.`,
+    };
+  }
+
   const time = minutesFromClock(checkOut);
-  const start = minutesFromClock("03:00");
-  const end = minutesFromClock("03:20");
-  const accepted = time >= start && time <= end;
+  const open = minutesFromClock("03:20");
+  const onTimeEnd = minutesFromClock("04:00");
+
+  if (time < open) {
+    return { accepted: false, status: "too-early", fine: 0, reason: "Checkout window opens at 3:20 AM." };
+  }
+  if (time <= onTimeEnd) {
+    return { accepted: true, status: "on-time", fine: 0, reason: "Checkout accepted on time (3:20 AM–4:00 AM)." };
+  }
   return {
-    accepted,
-    fine: accepted ? 0 : 400,
-    reason: accepted ? "Checkout accepted." : "Checkout outside 3:00 AM–3:20 AM window.",
+    accepted: true,
+    status: "late-200",
+    fine: 200,
+    reason: "Checkout after 4:00 AM automatically triggers a Rs 200 late checkout fine.",
   };
 }
 
