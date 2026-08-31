@@ -22,6 +22,32 @@ const ticket = (value: number) => `LBSAG-${String(Math.max(1, Number(value) || 1
 
 const categories = ["Supplies", "Chicken / Meat", "Vegetables", "Bread", "Gas", "Staff Meal", "Delivery", "Maintenance", "Petty Cash", "Other"];
 
+function karachiClock() {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Karachi",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date());
+  const read = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value || 0);
+  const year = read("year");
+  const month = read("month");
+  const day = read("day");
+  const hour = read("hour");
+  const minute = read("minute");
+  const minutes = hour * 60 + minute;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (hour < 14) date.setUTCDate(date.getUTCDate() - 1);
+  return {
+    operationalBusinessDate: date.toISOString().slice(0, 10),
+    expenseWindowOpen: minutes >= 14 * 60 || minutes < 3 * 60,
+    eodWindowOpen: minutes >= 2 * 60 && minutes <= 3 * 60 + 30,
+  };
+}
+
 export function LiveIposDailyClosing() {
   return <Secure title="iPOS daily closing sign in">{(session, signOut) => <DailyClosingBody token={session.access_token} signOut={signOut} />}</Secure>;
 }
@@ -44,29 +70,35 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
       const result = await getIposDailySummary(token, date);
       setSummary(result);
       setSelectedDate(result.business_date);
-      if (!date || markAsCurrent || !liveBusinessDate) setLiveBusinessDate(result.business_date);
+      if (!date || markAsCurrent) setLiveBusinessDate(result.business_date);
       setMessage("");
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "Daily sheet could not be loaded.");
     } finally {
       setLoading(false);
     }
-  }, [token, liveBusinessDate]);
+  }, [token]);
 
-  useEffect(() => { void load(undefined, true); }, [token]);
+  useEffect(() => { void load(undefined, true); }, [load]);
 
+  const clock = karachiClock();
   const isHistory = Boolean(summary && liveBusinessDate && summary.business_date !== liveBusinessDate);
+  const isUpcomingSheet = Boolean(summary && summary.business_date > clock.operationalBusinessDate);
   const canEdit = Boolean(summary && !isHistory && summary.status === "open");
+  const canAddExpense = canEdit && !isUpcomingSheet && clock.expenseWindowOpen;
+  const canCloseDay = canEdit && !isUpcomingSheet && clock.eodWindowOpen;
 
   const addExpense = async (event: FormEvent) => {
     event.preventDefault();
     const value = Number(amount);
-    if (!Number.isFinite(value) || value <= 0 || !canEdit) return;
+    if (!Number.isFinite(value) || value <= 0 || !canAddExpense) return;
     setBusy(true);
     setMessage("");
     try {
       const result = await addIposExpense(token, { category, detail, amount: value, paymentMethod });
       setSummary(result);
+      setSelectedDate(result.business_date);
+      setLiveBusinessDate(result.business_date);
       setAmount("");
       setDetail("");
       setMessage("Expense current business day mein save ho gaya.");
@@ -78,15 +110,19 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
   };
 
   const closeDay = async () => {
-    if (!canEdit || busy || !summary) return;
-    const confirmed = window.confirm(`End of Day ${summary.business_date} close karna hai? Is ke baad is business day par new orders aur expenses lock ho jayenge.`);
+    if (!canCloseDay || busy || !summary) return;
+    const confirmed = window.confirm(`End of Day ${summary.business_date} close karna hai? Purana din archive hoga aur next day ki blank sheet khul jayegi.`);
     if (!confirmed) return;
     setBusy(true);
     setMessage("");
     try {
       const result = await closeIposBusinessDay(token);
       setSummary(result);
-      setMessage("End of Day closed. Current sheet archive/history mein lock ho gayi.");
+      setSelectedDate(result.business_date);
+      setLiveBusinessDate(result.business_date);
+      setAmount("");
+      setDetail("");
+      setMessage(`End of Day closed. ${result.business_date} ki fresh blank sheet ready hai; next shift ka pehla order ${ticket(1)} hoga.`);
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "End of Day close failed.");
     } finally {
@@ -102,7 +138,7 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
         <div>
           <span className={eyebrow}>iPOS · Business day control</span>
           <h2 className="mb-2 mt-1 text-2xl font-black tracking-[-0.04em] text-lb-navy">End of Day + Expense Sheet</h2>
-          <p className="m-0 max-w-3xl text-xs leading-5 text-lb-muted">3:00 AM Asia/Karachi business-day cut-off. Purana din archive hota hai; next business day ki expense sheet blank hoti hai aur counter ticket numbering phir <strong className="text-lb-navy">LBSAG-0001</strong> se start hoti hai.</p>
+          <p className="m-0 max-w-3xl text-xs leading-5 text-lb-muted">Expense entry <strong className="text-lb-navy">2:00 PM–3:00 AM</strong>. End of Day <strong className="text-lb-navy">2:00 AM–3:30 AM</strong>. EOD close hote hi purani sheet archive hoti hai, next sheet blank khulti hai aur next shift ka visible ticket phir <strong className="text-lb-navy">LBSAG-0001</strong> se start hota hai.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button className={secondary} onClick={() => void load(undefined, true)} disabled={loading}>Current day</button>
@@ -118,12 +154,13 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
         </label>
         <button className={secondary} onClick={() => selectedDate && void load(selectedDate)} disabled={!selectedDate || loading}>Open history</button>
         {isHistory && <span className="rounded-full bg-amber-100 px-3 py-2 text-[10px] font-black uppercase text-amber-800">History · read only</span>}
+        {isUpcomingSheet && !isHistory && <span className="rounded-full bg-sky-100 px-3 py-2 text-[10px] font-black uppercase text-sky-800">Next day ready</span>}
       </div>
     </section>
 
     {summary && <>
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="Business date" value={summary.business_date} detail={summary.status === "closed" ? "Closed / archived" : "Open now"} />
+        <Metric label="Business date" value={summary.business_date} detail={summary.status === "closed" ? "Closed / archived" : isUpcomingSheet ? "Fresh next-day sheet" : "Open now"} />
         <Metric label="Orders" value={String(summary.order_count)} detail={`Next ${ticket(summary.next_order_number)}`} />
         <Metric label="Paid sales" value={money(summary.paid_sales)} detail={`Cash ${money(summary.cash_sales)} · Online ${money(summary.online_sales)}`} />
         <Metric label="Expenses" value={money(summary.expense_total)} detail={`${summary.expenses.length} entries`} />
@@ -133,7 +170,7 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
       <div className="grid gap-3 xl:grid-cols-[1.35fr_0.65fr]">
         <section className={panel}>
           <div className="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-            <div><span className={eyebrow}>Current sheet only</span><h3 className="mb-0 mt-1 text-xl font-black text-lb-navy">Expenses · {summary.business_date}</h3></div>
+            <div><span className={eyebrow}>{isHistory ? "Archived sheet" : "Current sheet only"}</span><h3 className="mb-0 mt-1 text-xl font-black text-lb-navy">Expenses · {summary.business_date}</h3></div>
             <span className={`rounded-full px-3 py-1.5 text-[9px] font-black uppercase ${summary.status === "closed" ? "bg-slate-200 text-slate-700" : "bg-emerald-100 text-emerald-800"}`}>{summary.status}</span>
           </div>
           <div className="grid gap-2">
@@ -149,22 +186,22 @@ function DailyClosingBody({ token, signOut }: { token: string; signOut: () => vo
           <section className={panel}>
             <span className={eyebrow}>Add expense</span>
             <form onSubmit={addExpense} className="mt-3 grid gap-2">
-              <select className={field} value={category} onChange={(event) => setCategory(event.target.value)} disabled={!canEdit}>{categories.map((item) => <option key={item}>{item}</option>)}</select>
-              <input className={field} value={detail} onChange={(event) => setDetail(event.target.value)} placeholder="Expense detail" disabled={!canEdit} />
-              <input type="number" min="1" step="1" className={field} value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount Rs" disabled={!canEdit} />
-              <select className={field} value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as DailyExpense["payment_method"])} disabled={!canEdit}>
+              <select className={field} value={category} onChange={(event) => setCategory(event.target.value)} disabled={!canAddExpense}>{categories.map((item) => <option key={item}>{item}</option>)}</select>
+              <input className={field} value={detail} onChange={(event) => setDetail(event.target.value)} placeholder="Expense detail" disabled={!canAddExpense} />
+              <input type="number" min="1" step="1" className={field} value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Amount Rs" disabled={!canAddExpense} />
+              <select className={field} value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value as DailyExpense["payment_method"])} disabled={!canAddExpense}>
                 <option value="cash">Cash</option><option value="online">Online</option><option value="bank">Bank</option><option value="other">Other</option>
               </select>
-              <button className={primary} disabled={!canEdit || busy || Number(amount) <= 0}>{busy ? "Saving…" : "Add expense"}</button>
+              <button className={primary} disabled={!canAddExpense || busy || Number(amount) <= 0}>{busy ? "Saving…" : "Add expense"}</button>
             </form>
-            {!canEdit && <p className="mb-0 mt-3 text-[10px] leading-4 text-lb-muted">{isHistory ? "History sirf view ho sakti hai; old expense sheet edit nahi hogi." : "End of Day close hai; is sheet par new expense add nahi ho sakta."}</p>}
+            {!canAddExpense && <p className="mb-0 mt-3 text-[10px] leading-4 text-lb-muted">{isHistory ? "History read-only hai." : isUpcomingSheet ? "Next-day sheet ready hai; expense entry 2:00 PM par open hogi." : "Expense entry sirf 2:00 PM se 3:00 AM tak open hai."}</p>}
           </section>
 
           <section className={`${panel} border-lb-red/15`}>
             <span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-red">Daily reset</span>
             <h3 className="mb-2 mt-1 text-lg font-black text-lb-navy">Close End of Day</h3>
-            <p className="text-xs leading-5 text-lb-muted">Closing ke baad yeh date lock rahegi. Data delete nahi hoga. 3:00 AM cut-off ke baad next business day automatically fresh sheet aur ticket #0001 use karega.</p>
-            <button className={`${danger} mt-2 w-full`} onClick={() => void closeDay()} disabled={!canEdit || busy}>{summary.status === "closed" ? "Day already closed" : busy ? "Closing…" : "End of Day · Close & Archive"}</button>
+            <p className="text-xs leading-5 text-lb-muted">EOD sirf 2:00 AM–3:30 AM close hoga. Purana data delete nahi hoga; archive/history mein rahega. Close ke baad next day ki blank sheet foran nazar aayegi.</p>
+            <button className={`${danger} mt-2 w-full`} onClick={() => void closeDay()} disabled={!canCloseDay || busy}>{busy ? "Closing…" : isUpcomingSheet ? "Next day ready" : !clock.eodWindowOpen ? "EOD opens 2:00 AM" : "End of Day · Close & Archive"}</button>
           </section>
         </aside>
       </div>
