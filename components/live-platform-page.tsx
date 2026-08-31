@@ -45,6 +45,7 @@ import {
 import { LiveCounterMembershipPOS, LiveMembership, LiveWorkforcePerformance } from "@/components/live-growth-performance";
 import { LiveCounterOrderTaking } from "@/components/counter-order-taking";
 import { LiveIposDailyClosing } from "@/components/ipos-daily-closing";
+import { LiveIposDailyRetrieve } from "@/components/ipos-daily-retrieve";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
@@ -53,7 +54,7 @@ function Header({ route }: { route: PlatformRoute }) {
 function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/dashboard") return <LiveManagementDashboardReviewed />;
   if (route.path === "/management/orders") return <LiveManagementOrders />;
-  if (route.path === "/management/orders/retrieve") return <LiveCounterRetrieve />;
+  if (route.path === "/management/orders/retrieve") return <LiveIposDailyRetrieve />;
   if (route.path === "/management/customers") return <LiveManagementCustomersRetentionReviewed />;
   if (route.path === "/management/menu") return <LiveMenuControl />;
   if (route.path === "/management/inventory") return <LiveManagementInventoryV2 />;
@@ -73,7 +74,7 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/ipos") return <LiveIposDailyClosing />;
   if (route.path === "/ipos/new-order") return <LiveCounterOrderTaking />;
   if (route.path === "/ipos/menu") return <LiveCounterMembershipPOS />;
-  if (["/ipos/retrieve","/ipos/receipts"].includes(route.path)) return <LiveCounterRetrieve />;
+  if (["/ipos/retrieve","/ipos/receipts"].includes(route.path)) return <LiveIposDailyRetrieve />;
   if (route.path === "/ipos/payments") return <LiveIposDailyClosing />;
   if (route.path === "/ipos/customers") return <LiveCounterRetrieve customerMode />;
   if (route.path === "/ipos/membership") return <LiveMembership />;
