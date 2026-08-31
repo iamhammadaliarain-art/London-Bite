@@ -26,6 +26,21 @@ export type IposDailySummary = {
   expenses: DailyExpense[];
 };
 
+export type DailyCounterOrder = {
+  id: string;
+  order_number: number;
+  customer_name: string | null;
+  customer_phone: string | null;
+  fulfilment: string;
+  payment_method: string;
+  payment_status: string;
+  status: string;
+  total: number;
+  source: string | null;
+  created_at: string;
+  items: { name: string; quantity: number; line_total: number }[];
+};
+
 export const getIposDailySummary = (token: string, businessDate?: string) =>
   lbRpc<IposDailySummary>("lb_ipos_daily_summary", { p_business_date: businessDate ?? null }, token);
 
@@ -42,3 +57,9 @@ export const addIposExpense = (
 
 export const closeIposBusinessDay = (token: string) =>
   lbRpc<IposDailySummary>("lb_ipos_close_day", {}, token);
+
+export const getIposDailyOrders = (token: string, query = "", businessDate?: string) =>
+  lbRpc<DailyCounterOrder[]>("lb_counter_orders_v2", {
+    p_query: query.trim() || null,
+    p_business_date: businessDate || null,
+  }, token);
