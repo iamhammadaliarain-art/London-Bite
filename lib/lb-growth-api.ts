@@ -10,7 +10,7 @@ export type CounterOrderCreated=CounterMemberOrder&{payment_status:CounterPaymen
 export const getCounterMemberships=(token:string,query="")=>lbRpc<MembershipRecord[]>("lb_counter_memberships",{p_query:query||null},token);
 export const upsertCounterMembership=(token:string,input:{phone:string;name?:string;discountPercent:number;validUntil?:string;status?:"active"|"paused"|"expired"})=>lbRpc<{id:string;member_code:string;status:string}>("lb_counter_membership_upsert",{p_customer_phone:input.phone,p_customer_name:input.name??null,p_discount_percent:input.discountPercent,p_valid_until:input.validUntil??null,p_status:input.status??"active"},token);
 export const getWorkforcePerformance=(token:string,days=30)=>lbRpc<WorkforceEvidence[]>("lb_management_workforce_performance",{p_days:days},token);
-export const createCounterMemberOrder=(token:string,input:{name?:string;phone?:string;fulfilment:"pickup"|"dine_in";items:{slug:string;quantity:number}[]})=>lbRpc<CounterMemberOrder>("lb_counter_create_order_v2",{p_customer_name:input.name??"Walk-in customer",p_customer_phone:input.phone?.trim()||"counter",p_fulfilment:input.fulfilment,p_items:input.items},token);
+export const createCounterMemberOrder=(token:string,input:{name?:string;phone?:string;fulfilment:"pickup"|"dine_in";items:{slug:string;quantity:number}[]})=>lbRpc<CounterMemberOrder>("lb_counter_create_order_v3",{p_customer_name:input.name??"Walk-in customer",p_customer_phone:input.phone?.trim()||"counter",p_fulfilment:input.fulfilment,p_items:input.items},token);
 export const createCounterOperationalOrder=(token:string,input:{
   name?:string;
   phone?:string;
@@ -22,7 +22,7 @@ export const createCounterOperationalOrder=(token:string,input:{
   paymentStatus:CounterPaymentState;
   notes?:string;
   items:{slug:string;quantity:number}[];
-})=>lbRpc<CounterOrderCreated>("lb_counter_create_operational_order",{
+})=>lbRpc<CounterOrderCreated>("lb_counter_create_operational_order_v2",{
   p_customer_name:input.name?.trim()||"Walk-in customer",
   p_customer_phone:input.phone?.trim()||"counter",
   p_channel:input.channel,
