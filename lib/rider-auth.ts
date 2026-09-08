@@ -21,8 +21,8 @@ export async function createRiderLogin(
 
   const email = riderEmailFromUsername(cleanUsername);
   const result = await lbSignUp(email, pin);
-  if (!("access_token" in result) && !result.user) {
-    throw new Error("Rider account could not be created.");
+  if (!("access_token" in result) || !result.access_token) {
+    throw new Error("Rider account was created but is not immediately usable. Supabase email confirmation must be disabled for rider accounts.");
   }
 
   await linkManagementEmployee(managementToken, employeeId, email, "rider");
