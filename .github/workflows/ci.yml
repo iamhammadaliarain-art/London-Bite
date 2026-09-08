@@ -71,10 +71,10 @@ jobs:
       - name: Verify health payload
         run: node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/health.json","utf8"));if(j.status!=="ok"||j.service!=="london-bite-platform")process.exit(1)'
 
-      - name: Verify 53 routes and 32 primary screens
+      - name: Verify 55 routes and 34 primary screens
         run: |
           curl -fsS http://127.0.0.1:3000/api/platform/routes > /tmp/routes.json
-          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==53||j.primaryCount!==32||j.routes.length!==53||j.primaryRoutes.length!==32)process.exit(1)'
+          node -e 'const fs=require("fs");const j=JSON.parse(fs.readFileSync("/tmp/routes.json","utf8"));if(j.count!==55||j.primaryCount!==34||j.routes.length!==55||j.primaryRoutes.length!==34)process.exit(1)'
 
       - name: Smoke test customer commerce
         run: |
