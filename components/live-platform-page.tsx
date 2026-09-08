@@ -44,6 +44,7 @@ import {
 } from "@/components/live-route-completion";
 import { LiveCounterMembershipPOS, LiveMembership, LiveWorkforcePerformance } from "@/components/live-growth-performance";
 import { LiveCounterOrderTaking } from "@/components/counter-order-taking";
+import { LiveManagementRiderAccess, RiderApp } from "@/components/rider-app";
 
 function Header({ route }: { route: PlatformRoute }) {
   return <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end"><div><span className="text-[9px] font-black uppercase tracking-[0.16em] text-lb-blue">{route.module} · Live</span><h1 className="my-1 text-[30px] font-bold tracking-[-0.04em] text-lb-navy">{route.title}</h1><p className="m-0 max-w-2xl text-sm text-lb-muted">{route.purpose}</p></div><span className="hidden rounded-full border border-white/80 bg-white/60 px-3 py-1.5 font-mono text-[10px] text-lb-muted backdrop-blur-xl md:inline">{route.path}</span></div>;
@@ -57,6 +58,7 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/management/menu") return <LiveMenuControl />;
   if (route.path === "/management/inventory") return <LiveManagementInventoryV2 />;
   if (route.path === "/management/employees") return <LiveStaffDirectory />;
+  if (route.path === "/management/rider-access") return <LiveManagementRiderAccess />;
   if (route.path === "/management/attendance") return <LiveManagementAttendanceScheduleReviewed />;
   if (route.path === "/management/fines") return <LiveManagementAttendance />;
   if (route.path === "/management/payroll") return <LiveManagementPayroll />;
@@ -79,9 +81,9 @@ function resolveLiveBody(route: PlatformRoute): ReactNode | null {
   if (route.path === "/kitchen/stock") return <LiveKitchenStock />;
   if (route.path === "/kitchen/qc") return <LiveKitchenQc />;
 
-  if (["/rider","/rider/orders","/rider/active-delivery"].includes(route.path)) return <LiveRiderJobs />;
+  if (["/rider","/rider/orders","/rider/active-delivery"].includes(route.path)) return <RiderApp />;
   if (route.path === "/rider/history") return <LiveRiderJobs history />;
-  if (route.path === "/rider/daily-sheet") return <LiveRiderDailySheet />;
+  if (route.path === "/rider/daily-sheet") return <RiderApp />;
   if (route.path === "/rider/performance") return <LiveRiderPerformance />;
 
   if (route.path === "/employee") return <LiveEmployeeHome />;
