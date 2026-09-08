@@ -8,6 +8,7 @@ export type CounterCustomer={phone:string;name:string;orders:number;revenue:numb
 export type KitchenMenuItem={id:string;slug:string;name:string;category:string;is_available:boolean;is_active:boolean};
 export type KitchenQc={id:string;order_id:string|null;order_number:number|null;check_type:string;detail:string;status:string;created_at:string};
 export type RiderJob={assignment_id:string;order_id:string;order_number:number;assignment_status:string;order_status:string;customer_name:string;customer_phone:string;delivery_address:string;total:number;assigned_at:string;picked_up_at:string|null;delivered_at:string|null;items:{name:string;quantity:number}[]};
+export type DeliveryRiderJob=RiderJob&{order_started_at:string;bonus_candidate:boolean;bonus_amount:number;verification_status:"pending"|"approved"|"rejected";payment_status:"pending"|"approved"|"paid"};
 export type RiderPerformance={delivered:number;failed:number;average_minutes:number;recent:{order_number:number;status:string;picked_up_at:string|null;delivered_at:string|null}[]};
 export type StaffProfile={id:string;employee_code:string;name:string;role:string;branch:string;station:string|null;phone:string|null;status:string;joined_on:string;documents:{document_type:string;status:string;expires_on:string|null;reference_url:string|null;notes:string|null}[]};
 export type DeliveryShiftStatus={business_date:string;window_open:boolean;day_closed:boolean;can_receive_jobs:boolean;opens_at:string;hard_closes_at:string};
@@ -27,6 +28,7 @@ export const createKitchenQc=(token:string,input:{orderId?:string;type:string;de
 export const resolveKitchenQc=(token:string,id:string)=>lbRpc("lb_kitchen_qc_resolve",{p_id:id},token);
 export const assignRider=(token:string,orderId:string,employeeId:string)=>lbRpc("lb_management_assign_rider",{p_order_id:orderId,p_employee_id:employeeId},token);
 export const getRiderJobs=(token:string,includeHistory=false)=>lbRpc<RiderJob[]>("lb_rider_jobs",{p_include_history:includeHistory},token);
+export const getDeliveryRiderJobs=(token:string,includeHistory=false)=>lbRpc<DeliveryRiderJob[]>("lb_delivery_rider_jobs",{p_include_history:includeHistory},token);
 export const updateRiderJob=(token:string,assignmentId:string,status:"picked_up"|"delivered"|"failed")=>lbRpc("lb_rider_update_job",{p_assignment_id:assignmentId,p_status:status},token);
 export const updateDeliveryRiderJob=(token:string,assignmentId:string,status:"picked_up"|"delivered"|"failed")=>lbRpc("lb_delivery_rider_update_job",{p_assignment_id:assignmentId,p_status:status},token);
 export const submitRiderDailySheet=(token:string,note:string,evidenceUrl?:string)=>lbRpc("lb_rider_daily_sheet_submit",{p_note:note,p_evidence_url:evidenceUrl??null},token);
