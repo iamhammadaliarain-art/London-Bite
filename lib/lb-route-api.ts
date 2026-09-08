@@ -10,6 +10,8 @@ export type KitchenQc={id:string;order_id:string|null;order_number:number|null;c
 export type RiderJob={assignment_id:string;order_id:string;order_number:number;assignment_status:string;order_status:string;customer_name:string;customer_phone:string;delivery_address:string;total:number;assigned_at:string;picked_up_at:string|null;delivered_at:string|null;items:{name:string;quantity:number}[]};
 export type RiderPerformance={delivered:number;failed:number;average_minutes:number;recent:{order_number:number;status:string;picked_up_at:string|null;delivered_at:string|null}[]};
 export type StaffProfile={id:string;employee_code:string;name:string;role:string;branch:string;station:string|null;phone:string|null;status:string;joined_on:string;documents:{document_type:string;status:string;expires_on:string|null;reference_url:string|null;notes:string|null}[]};
+export type DeliveryShiftStatus={business_date:string;window_open:boolean;day_closed:boolean;can_receive_jobs:boolean;opens_at:string;hard_closes_at:string};
+export type DeliveryControlRow={assignment_id:string;order_id:string;order_number:number;customer_name:string;customer_phone:string;delivery_address:string;rider_id:string;rider_name:string;rider_code:string;order_started_at:string;kitchen_ready_at:string|null;assigned_at:string;picked_up_at:string|null;delivered_at:string|null;kitchen_seconds:number|null;dispatch_wait_seconds:number|null;rider_seconds:number|null;total_seconds:number;late_seconds:number;sla_status:"active"|"on_time"|"late";bonus_candidate:boolean;bonus_amount:number;verification_status:"pending"|"approved"|"rejected";verification_note:string|null;payment_status:"pending"|"approved"|"paid"};
 
 export const getManagementCustomers=(token:string)=>lbRpc<CustomerSummary[]>("lb_management_customers",{},token);
 export const getManagementDocuments=(token:string)=>lbRpc<DocumentRecord[]>("lb_management_documents",{},token);
@@ -26,7 +28,14 @@ export const resolveKitchenQc=(token:string,id:string)=>lbRpc("lb_kitchen_qc_res
 export const assignRider=(token:string,orderId:string,employeeId:string)=>lbRpc("lb_management_assign_rider",{p_order_id:orderId,p_employee_id:employeeId},token);
 export const getRiderJobs=(token:string,includeHistory=false)=>lbRpc<RiderJob[]>("lb_rider_jobs",{p_include_history:includeHistory},token);
 export const updateRiderJob=(token:string,assignmentId:string,status:"picked_up"|"delivered"|"failed")=>lbRpc("lb_rider_update_job",{p_assignment_id:assignmentId,p_status:status},token);
+export const updateDeliveryRiderJob=(token:string,assignmentId:string,status:"picked_up"|"delivered"|"failed")=>lbRpc("lb_delivery_rider_update_job",{p_assignment_id:assignmentId,p_status:status},token);
 export const submitRiderDailySheet=(token:string,note:string,evidenceUrl?:string)=>lbRpc("lb_rider_daily_sheet_submit",{p_note:note,p_evidence_url:evidenceUrl??null},token);
+export const submitDeliverySheetAndClose=(token:string,note:string,evidenceUrl?:string)=>lbRpc<{business_date:string;day_closed:boolean}>("lb_delivery_submit_sheet_and_close",{p_note:note,p_evidence_url:evidenceUrl??null},token);
 export const getRiderPerformance=(token:string)=>lbRpc<RiderPerformance>("lb_rider_performance",{},token);
+export const getDeliveryShiftStatus=(token:string)=>lbRpc<DeliveryShiftStatus>("lb_delivery_rider_shift_status",{},token);
+export const getManagementDeliveryControl=(token:string,businessDate?:string)=>lbRpc<DeliveryControlRow[]>("lb_management_delivery_control",{p_business_date:businessDate??null},token);
+export const verifyManagementDelivery=(token:string,assignmentId:string,decision:"approved"|"rejected",note?:string)=>lbRpc("lb_management_delivery_verify",{p_assignment_id:assignmentId,p_decision:decision,p_note:note??null},token);
+export const approveManagementDeliveryPayment=(token:string,employeeId:string,businessDate?:string)=>lbRpc("lb_management_delivery_approve_payment",{p_employee_id:employeeId,p_business_date:businessDate??null},token);
+export const markManagementDeliveryPaid=(token:string,employeeId:string,businessDate?:string)=>lbRpc("lb_management_delivery_mark_paid",{p_employee_id:employeeId,p_business_date:businessDate??null},token);
 export const submitStaffInventory=(token:string,note:string,evidenceUrl?:string)=>lbRpc("lb_staff_inventory_submission",{p_note:note,p_evidence_url:evidenceUrl??null},token);
 export const getStaffProfile=(token:string)=>lbRpc<StaffProfile>("lb_staff_profile",{},token);
