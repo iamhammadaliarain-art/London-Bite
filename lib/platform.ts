@@ -19,6 +19,7 @@ const route = (path: string, title: string, module: PlatformModule, features: st
 export const platformRoutes: PlatformRoute[] = [
   route("/management/dashboard", "Command Dashboard", "Management", ["Live KPIs", "Operational alerts", "Sales pulse"]),
   route("/management/orders", "Orders", "Management", ["All orders", "Status control", "Search by bill number"]),
+  route("/management/delivery", "Delivery Control", "Management", ["40-minute SLA", "Rider verification", "Bonus approval"]),
   route("/management/orders/retrieve", "Retrieve Orders", "Management", ["Unpaid retrieval", "Mark paid", "Reprint receipt"]),
   route("/management/customers", "Customers", "Management", ["Order history", "Ratings", "Membership status"]),
   route("/management/menu", "Menu Control", "Management", ["Products", "Prices", "Availability"]),
@@ -55,6 +56,7 @@ export const platformRoutes: PlatformRoute[] = [
   route("/kitchen/qc", "Kitchen QC", "Kitchen", ["Wrong-order control", "Quality checks", "Proof"]),
 
   route("/rider", "Rider Dashboard", "Rider", ["Assigned jobs", "Delivery KPI", "Shift summary"]),
+  route("/rider/delivery", "Rider Delivery", "Rider", ["40-minute timer", "Pick up and start", "Delivered action"]),
   route("/rider/orders", "Assigned Orders", "Rider", ["Receipt number", "Address", "Start delivery"]),
   route("/rider/active-delivery", "Active Delivery", "Rider", ["Live GPS", "Customer tracking", "Delivered action"]),
   route("/rider/history", "Delivery History", "Rider", ["Completed jobs", "Duration", "Performance"]),
@@ -82,6 +84,7 @@ export const moduleOrder: PlatformModule[] = ["Management", "iPOS", "Kitchen", "
 export const primaryRoutePaths = [
   "/management/dashboard",
   "/management/orders",
+  "/management/delivery",
   "/management/customers",
   "/management/menu",
   "/management/inventory",
@@ -102,6 +105,7 @@ export const primaryRoutePaths = [
   "/kitchen/stock",
   "/kitchen/qc",
   "/rider",
+  "/rider/delivery",
   "/rider/orders",
   "/rider/active-delivery",
   "/rider/daily-sheet",
